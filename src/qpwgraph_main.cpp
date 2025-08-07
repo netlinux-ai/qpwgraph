@@ -489,6 +489,14 @@ qpwgraph_main::qpwgraph_main (
 		SIGNAL(orientationChanged(Qt::Orientation)),
 		SLOT(orientationChanged(Qt::Orientation)));
 
+	QObject::connect(m_ui.actionDunno,
+		SIGNAL(triggered(bool)),
+		SLOT(actionDunno()));
+
+	QObject::connect(m_ui.actionSpread,
+		SIGNAL(triggered(bool)),
+		SLOT(actionSpread()));
+
 	m_ui.graphCanvas->setSearchPlaceholderText(
 		m_ui.editSearchItemAction->statusTip() + QString(3, '.'));
 
@@ -1089,6 +1097,16 @@ void qpwgraph_main::helpAbout (void)
 	QMessageBox::about(this, tr("About") + ' ' + title, text);
 }
 
+
+void qpwgraph_main::actionDunno (void)
+{
+	QMessageBox::about(this, tr("Dunno"), " No really ");
+}
+
+void qpwgraph_main::actionSpread (void)
+{
+	QMessageBox::about(this, tr("Spread"), "maybe later");
+}
 
 void qpwgraph_main::helpAboutQt (void)
 {

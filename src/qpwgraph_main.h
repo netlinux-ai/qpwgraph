@@ -162,6 +162,9 @@ protected slots:
 	void helpAbout();
 	void helpAboutQt();
 
+	void actionDunno();
+	void actionSpread();
+
 	void thumbviewContextMenu(const QPoint& pos);
 
 	void zoomValueChanged(int zoom_value);

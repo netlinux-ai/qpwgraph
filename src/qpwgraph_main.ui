@@ -26,22 +26,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>783</width>
+    <height>192</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>qpwgraph</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="qpwgraph.qrc">:/images/qpwgraph.svg</iconset>
+   <iconset resource="qpwgraph.qrc">
+    <normaloff>:/images/qpwgraph.svg</normaloff>:/images/qpwgraph.svg</iconset>
   </property>
   <widget class="QWidget" name="MainCentralWidget">
    <layout class="QVBoxLayout">
-    <property name="margin">
+    <property name="spacing">
      <number>0</number>
     </property>
-    <property name="spacing">
+    <property name="margin" stdset="0">
      <number>0</number>
     </property>
     <item>
@@ -55,8 +56,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>20</height>
+     <width>783</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="graphMenu">
@@ -126,7 +127,8 @@
       <string>T&amp;humbview</string>
      </property>
      <property name="icon">
-      <iconset resource="qpwgraph.qrc">:/images/viewThumbview.png</iconset>
+      <iconset resource="qpwgraph.qrc">
+       <normaloff>:/images/viewThumbview.png</normaloff>:/images/viewThumbview.png</iconset>
      </property>
      <addaction name="viewThumbviewTopLeftAction"/>
      <addaction name="viewThumbviewTopRightAction"/>
@@ -140,7 +142,8 @@
       <string>&amp;Zoom</string>
      </property>
      <property name="icon">
-      <iconset resource="qpwgraph.qrc">:/images/viewZoomTool.png</iconset>
+      <iconset resource="qpwgraph.qrc">
+       <normaloff>:/images/viewZoomTool.png</normaloff>:/images/viewZoomTool.png</iconset>
      </property>
      <addaction name="viewZoomInAction"/>
      <addaction name="viewZoomOutAction"/>
@@ -153,7 +156,8 @@
       <string>Co&amp;lors</string>
      </property>
      <property name="icon">
-      <iconset resource="qpwgraph.qrc">:/images/viewColors.png</iconset>
+      <iconset resource="qpwgraph.qrc">
+       <normaloff>:/images/viewColors.png</normaloff>:/images/viewColors.png</iconset>
      </property>
      <addaction name="viewColorsPipewireAudioAction"/>
      <addaction name="viewColorsPipewireMidiAction"/>
@@ -199,12 +203,20 @@
     <addaction name="helpAboutAction"/>
     <addaction name="helpAboutQtAction"/>
    </widget>
+   <widget class="QMenu" name="menuGrahamButton">
+    <property name="title">
+     <string>GrahamButton</string>
+    </property>
+    <addaction name="actionDunno"/>
+    <addaction name="actionSpread"/>
+   </widget>
    <addaction name="graphMenu"/>
    <addaction name="patchbayMenu"/>
    <addaction name="editMenu"/>
    <addaction name="viewMenu"/>
    <addaction name="separator"/>
    <addaction name="helpMenu"/>
+   <addaction name="menuGrahamButton"/>
   </widget>
   <widget class="QToolBar" name="graphToolbar">
    <property name="allowedAreas">
@@ -270,7 +282,8 @@
   </widget>
   <action name="graphConnectAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemConnect.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemConnect.png</normaloff>:/images/itemConnect.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Connect</string>
@@ -290,7 +303,8 @@
   </action>
   <action name="graphDisconnectAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemDisconnect.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemDisconnect.png</normaloff>:/images/itemDisconnect.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Disconnect</string>
@@ -344,7 +358,8 @@
   </action>
   <action name="patchbayNewAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/fileNew.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/fileNew.png</normaloff>:/images/fileNew.png</iconset>
    </property>
    <property name="text">
     <string>&amp;New</string>
@@ -364,7 +379,8 @@
   </action>
   <action name="patchbayOpenAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/fileOpen.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/fileOpen.png</normaloff>:/images/fileOpen.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Open...</string>
@@ -384,7 +400,8 @@
   </action>
   <action name="patchbaySaveAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/fileSave.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/fileSave.png</normaloff>:/images/fileSave.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Save</string>
@@ -421,7 +438,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemActivate.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemActivate.png</normaloff>:/images/itemActivate.png</iconset>
    </property>
    <property name="text">
     <string>Act&amp;ivated</string>
@@ -444,7 +462,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemExclusive.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemExclusive.png</normaloff>:/images/itemExclusive.png</iconset>
    </property>
    <property name="text">
     <string>E&amp;xclusive</string>
@@ -467,7 +486,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemEdit.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemEdit.png</normaloff>:/images/itemEdit.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Edit</string>
@@ -487,7 +507,8 @@
   </action>
   <action name="patchbayPinAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemPin.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemPin.png</normaloff>:/images/itemPin.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Pin</string>
@@ -507,7 +528,8 @@
   </action>
   <action name="patchbayUnpinAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemUnpin.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemUnpin.png</normaloff>:/images/itemUnpin.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Unpin</string>
@@ -626,7 +648,8 @@
   </action>
   <action name="editRenameItemAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemEdit.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemEdit.png</normaloff>:/images/itemEdit.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Rename...</string>
@@ -646,7 +669,8 @@
   </action>
   <action name="editSearchItemAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/itemFind.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/itemFind.png</normaloff>:/images/itemFind.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Find...</string>
@@ -857,7 +881,8 @@
   </action>
   <action name="viewCenterAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/viewCenter.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewCenter.png</normaloff>:/images/viewCenter.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Center</string>
@@ -894,7 +919,8 @@
   </action>
   <action name="viewZoomInAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/viewZoomIn.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewZoomIn.png</normaloff>:/images/viewZoomIn.png</iconset>
    </property>
    <property name="text">
     <string>Zoom &amp;In</string>
@@ -914,7 +940,8 @@
   </action>
   <action name="viewZoomOutAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/viewZoomOut.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewZoomOut.png</normaloff>:/images/viewZoomOut.png</iconset>
    </property>
    <property name="text">
     <string>Zoom &amp;Out</string>
@@ -934,7 +961,8 @@
   </action>
   <action name="viewZoomFitAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/viewZoomFit.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewZoomFit.png</normaloff>:/images/viewZoomFit.png</iconset>
    </property>
    <property name="text">
     <string>Zoom &amp;Fit</string>
@@ -954,7 +982,8 @@
   </action>
   <action name="viewZoomResetAction">
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/viewZoomReset.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewZoomReset.png</normaloff>:/images/viewZoomReset.png</iconset>
    </property>
    <property name="text">
     <string>Zoom &amp;Reset</string>
@@ -977,7 +1006,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="qpwgraph.qrc">:/images/viewZoomRange.png</iconset>
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewZoomRange.png</normaloff>:/images/viewZoomRange.png</iconset>
    </property>
    <property name="text">
     <string>Zoom Rang&amp;e</string>
@@ -1254,6 +1284,16 @@
    </property>
    <property name="shortcut">
     <string/>
+   </property>
+  </action>
+  <action name="actionDunno">
+   <property name="text">
+    <string>Dunno</string>
+   </property>
+  </action>
+  <action name="actionSpread">
+   <property name="text">
+    <string>Spread</string>
    </property>
   </action>
  </widget>
