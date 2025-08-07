@@ -6,8 +6,28 @@ ChangeLog
 
 GIT HEAD
 
+- Make all node-names in merger list (Graph/Options.../Merger)
+  implicitly exclusive for Patchbay persistence. (GL Issue #105)
+  (EXPERIMENTAL)
+
+- Cope with in-flight node/port count changing. (EXPERIMENTAL)
+
+
+0.9.4  2025-06-21  An Early-Summer'25 Beta Release.
+
+- Indulged on a new 'Add' (pinned connection) button into the
+  Patchbay/Manage... dialog also make dialog size and position
+  persistent.
+- Introducing Graph/Options.../Merger to unify node-names for
+  Patchbay persistence, especially useful to PipeWire clients
+  that spawn more than one node, having the very same name (eg.
+  web browsers).
+
+
+0.9.3  2025-06-02  An End-of-Spring'25 Beta Release.
+
 - Corrected (again) salvage of node positions that possible have
-  the very same and exact name. (EXPERIMENTAL)
+  the very same and exact name.
 
 
 0.9.2  2025-05-17  A Mid-Spring'25 Hot-Fix Beta Release.

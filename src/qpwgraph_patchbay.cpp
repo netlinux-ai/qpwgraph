@@ -1,7 +1,7 @@
 // qpwgraph_patchbay.cpp
 //
 /****************************************************************************
-   Copyright (C) 2021-2024, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -133,9 +133,9 @@ void qpwgraph_patchbay::snap (void)
 						m_items.addItem(Item(
 							node1->nodeType(),
 							port1->portType(),
-							node1->nodeName(),
+							node1->nodeNameEx(),
 							port1->portName(),
-							node2->nodeName(),
+							node2->nodeNameEx(),
 							port2->portName()));
 					}
 				}
@@ -319,6 +319,8 @@ bool qpwgraph_patchbay::scan (void)
 					item->node_type);
 			if (nodes2.isEmpty())
 				continue;
+			const bool node1_exclusive
+				= m_canvas->isMergerNodes(node1->nodeName());
 			foreach (qpwgraph_node *node2, nodes2) {
 				qpwgraph_port *port2
 					= node2->findPort(
@@ -327,7 +329,7 @@ bool qpwgraph_patchbay::scan (void)
 						item->port_type);
 				if (port2 == nullptr)
 					continue;
-				if (m_activated && m_exclusive) {
+				if (m_activated && (m_exclusive || node1_exclusive)) {
 					foreach (qpwgraph_connect *connect12, port1->connects()) {
 						qpwgraph_port *port12 = connect12->port2();
 						if (port12 == nullptr)
@@ -339,9 +341,9 @@ bool qpwgraph_patchbay::scan (void)
 							const Item item12(
 								node1->nodeType(),
 								port1->portType(),
-								node1->nodeName(),
+								node1->nodeNameEx(),
 								port1->portName(),
-								node12->nodeName(),
+								node12->nodeNameEx(),
 								port12->portName());
 							if (m_items.constFind(item12) == iter_end)
 								disconnects.insert(item12, connect12);
@@ -358,9 +360,9 @@ bool qpwgraph_patchbay::scan (void)
 							const Item item21(
 								node21->nodeType(),
 								port21->portType(),
-								node21->nodeName(),
+								node21->nodeNameEx(),
 								port21->portName(),
-								node2->nodeName(),
+								node2->nodeNameEx(),
 								port2->portName());
 							if (m_items.constFind(item21) == iter_end) {
 								disconnects.insert(item21, connect21);
@@ -376,9 +378,9 @@ bool qpwgraph_patchbay::scan (void)
 					const Item item12(
 						node1->nodeType(),
 						port1->portType(),
-						node1->nodeName(),
+						node1->nodeNameEx(),
 						port1->portName(),
-						node2->nodeName(),
+						node2->nodeNameEx(),
 						port2->portName());
 					disconnects.insert(item12, connect12);
 				}
@@ -415,9 +417,9 @@ bool qpwgraph_patchbay::connectPorts (
 		const Item item(
 			node1->nodeType(),
 			port1->portType(),
-			node1->nodeName(),
+			node1->nodeNameEx(),
 			port1->portName(),
-			node2->nodeName(),
+			node2->nodeNameEx(),
 			port2->portName());
 		if (is_connect)
 			ret = m_items.addItem(item);
@@ -450,9 +452,9 @@ qpwgraph_patchbay::Item *qpwgraph_patchbay::findConnectPorts (
 			const Item item(
 				node1->nodeType(),
 				port1->portType(),
-				node1->nodeName(),
+				node1->nodeNameEx(),
 				port1->portName(),
-				node2->nodeName(),
+				node2->nodeNameEx(),
 				port2->portName());
 			ret = m_items.value(item, nullptr);
 		}

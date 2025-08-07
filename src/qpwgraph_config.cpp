@@ -1,7 +1,7 @@
 // qpwgraph_config.cpp
 //
 /****************************************************************************
-   Copyright (C) 2021-2024, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -32,10 +32,10 @@
 
 
 // Local constants.
-static const char *GeometryGroup    = "/GraphGeometry";
-static const char *LayoutGroup      = "/GraphLayout";
+static const char *GraphGeometryGroup = "/GraphGeometry";
+static const char *GraphLayoutGroup = "/GraphLayout";
 
-static const char *ViewGroup        = "/GraphView";
+static const char *GraphViewGroup   = "/GraphView";
 static const char *ViewMenubarKey   = "/Menubar";
 static const char *ViewToolbarKey   = "/Toolbar";
 static const char *ViewStatusbarKey = "/Statusbar";
@@ -74,14 +74,15 @@ static const char *SessionGroup = "/Session";
 static const char *SessionStartMinimizedKey = "/StartMinimized";
 
 static const char *FilterNodesGroup = "/FilterNodes";
-static const char *FilterNodesEnabledKey = "/Enabled";
-static const char *FilterNodesListKey = "/List";
+static const char *MergerNodesGroup = "/MergerNodes";
+static const char *NodesEnabledKey = "/Enabled";
+static const char *NodesListKey = "/List";
 
 static const char *HistoryGroup = "/History";
 
 
 // Legacy main-form class renaming support (> v0.7.7)
-#define LEGACY_MAIN_FORM 1
+//
 #ifdef  LEGACY_MAIN_FORM
 static const char *LegacyName = "form";
 static const char *ModernName = "main";
@@ -110,7 +111,9 @@ qpwgraph_config::qpwgraph_config ( QSettings *settings, bool owner )
 		m_alsaseq_enabled(true),
 		m_start_minimized(false),
 		m_filter_enabled(false),
-		m_filter_dirty(false)
+		m_filter_dirty(false),
+		m_merger_enabled(false),
+		m_merger_dirty(false)
 {
 }
 
@@ -446,6 +449,39 @@ bool qpwgraph_config::isFilterNodesDirty (void) const
 }
 
 
+void qpwgraph_config::setMergerNodesEnabled ( bool enabled )
+{
+	m_merger_enabled = enabled;
+}
+
+bool qpwgraph_config::isMergerNodesEnabled (void) const
+{
+	return m_merger_enabled;
+}
+
+
+void qpwgraph_config::setMergerNodesList ( const QStringList& nodes )
+{
+	m_merger_nodes = nodes;
+}
+
+const QStringList& qpwgraph_config::mergerNodesList (void) const
+{
+	return m_merger_nodes;
+}
+
+
+void qpwgraph_config::setMergerNodesDirty ( bool dirty )
+{
+	m_merger_dirty = dirty;
+}
+
+bool qpwgraph_config::isMergerNodesDirty (void) const
+{
+	return m_merger_dirty;
+}
+
+
 void qpwgraph_config::setSessionStartMinimized ( bool start_minimized )
 {
 	m_settings->beginGroup(SessionGroup);
@@ -472,9 +508,14 @@ bool qpwgraph_config::restoreState ( QMainWindow *widget )
 	if (m_settings == nullptr || widget == nullptr)
 		return false;
 
+	m_settings->beginGroup(MergerNodesGroup);
+	m_merger_enabled = m_settings->value(NodesEnabledKey, false).toBool();
+	m_merger_nodes = m_settings->value(NodesListKey).toStringList();
+	m_settings->endGroup();
+
 	m_settings->beginGroup(FilterNodesGroup);
-	m_filter_enabled = m_settings->value(FilterNodesEnabledKey, false).toBool();
-	m_filter_nodes = m_settings->value(FilterNodesListKey).toStringList();
+	m_filter_enabled = m_settings->value(NodesEnabledKey, false).toBool();
+	m_filter_nodes = m_settings->value(NodesListKey).toStringList();
 	m_settings->endGroup();
 
 #ifdef CONFIG_SYSTEM_TRAY
@@ -509,7 +550,7 @@ bool qpwgraph_config::restoreState ( QMainWindow *widget )
 			iter.remove();
 	}
 
-	m_settings->beginGroup(ViewGroup);
+	m_settings->beginGroup(GraphViewGroup);
 	m_menubar = m_settings->value(ViewMenubarKey, true).toBool();
 	m_toolbar = m_settings->value(ViewToolbarKey, true).toBool();
 	m_statusbar = m_settings->value(ViewStatusbarKey, true).toBool();
@@ -522,7 +563,7 @@ bool qpwgraph_config::restoreState ( QMainWindow *widget )
 	m_cthrunodes = m_settings->value(ViewConnectThroughNodesKey, false).toBool();
 	m_settings->endGroup();
 
-	m_settings->beginGroup(GeometryGroup);
+	m_settings->beginGroup(GraphGeometryGroup);
 #ifdef LEGACY_MAIN_FORM
 	QString sGeometryKey = '/' + widget->objectName();
 	QByteArray geometry_state = m_settings->value(sGeometryKey).toByteArray();
@@ -543,7 +584,7 @@ bool qpwgraph_config::restoreState ( QMainWindow *widget )
 
 	widget->restoreGeometry(geometry_state);
 
-	m_settings->beginGroup(LayoutGroup);
+	m_settings->beginGroup(GraphLayoutGroup);
 #ifdef LEGACY_MAIN_FORM
 	QString sLayoutKey = '/' + widget->objectName();
 	QByteArray layout_state = m_settings->value(sLayoutKey).toByteArray();
@@ -573,9 +614,14 @@ bool qpwgraph_config::saveState ( QMainWindow *widget ) const
 	if (m_settings == nullptr || widget == nullptr)
 		return false;
 
+	m_settings->beginGroup(MergerNodesGroup);
+	m_settings->setValue(NodesEnabledKey, m_merger_enabled);
+	m_settings->setValue(NodesListKey, m_merger_nodes);
+	m_settings->endGroup();
+
 	m_settings->beginGroup(FilterNodesGroup);
-	m_settings->setValue(FilterNodesEnabledKey, m_filter_enabled);
-	m_settings->setValue(FilterNodesListKey, m_filter_nodes);
+	m_settings->setValue(NodesEnabledKey, m_filter_enabled);
+	m_settings->setValue(NodesListKey, m_filter_nodes);
 	m_settings->endGroup();
 
 #ifdef CONFIG_SYSTEM_TRAY
@@ -604,7 +650,7 @@ bool qpwgraph_config::saveState ( QMainWindow *widget ) const
 	m_settings->setValue(PatchbayQueryQuitKey, m_patchbay_queryquit);
 	m_settings->endGroup();
 
-	m_settings->beginGroup(ViewGroup);
+	m_settings->beginGroup(GraphViewGroup);
 	m_settings->setValue(ViewMenubarKey, m_menubar);
 	m_settings->setValue(ViewToolbarKey, m_toolbar);
 	m_settings->setValue(ViewStatusbarKey, m_statusbar);
@@ -617,12 +663,12 @@ bool qpwgraph_config::saveState ( QMainWindow *widget ) const
 	m_settings->setValue(ViewConnectThroughNodesKey, m_cthrunodes);
 	m_settings->endGroup();
 
-	m_settings->beginGroup(GeometryGroup);
+	m_settings->beginGroup(GraphGeometryGroup);
 	const QByteArray& geometry_state = widget->saveGeometry();
 	m_settings->setValue('/' + widget->objectName(), geometry_state);
 	m_settings->endGroup();
 
-	m_settings->beginGroup(LayoutGroup);
+	m_settings->beginGroup(GraphLayoutGroup);
 	const QByteArray& layout_state = widget->saveState();
 	m_settings->setValue('/' + widget->objectName(), layout_state);
 	m_settings->endGroup();
@@ -668,6 +714,35 @@ void qpwgraph_config::saveComboBoxHistory ( QComboBox *cbox, int nlimit )
 	m_settings->beginGroup(HistoryGroup);
 	m_settings->setValue('/' + cbox->objectName(), items);
 	m_settings->endGroup();
+}
+
+
+// Widget geometry persistence helpers.
+//
+void qpwgraph_config::loadWidgetGeometry ( QWidget *widget )
+{
+	if (widget) {
+		m_settings->beginGroup(GraphGeometryGroup);
+		const QByteArray& geometry
+			= m_settings->value('/' + widget->objectName()).toByteArray();
+		if (!geometry.isEmpty())
+			widget->restoreGeometry(geometry);
+		m_settings->endGroup();
+	}
+}
+
+
+void qpwgraph_config::saveWidgetGeometry ( QWidget *widget )
+{
+	if (widget) {
+		const QByteArray& geometry
+			= widget->saveGeometry();
+		if (!geometry.isEmpty()) {
+			m_settings->beginGroup(GraphGeometryGroup);
+			m_settings->setValue('/' + widget->objectName(), geometry);
+			m_settings->endGroup();
+		}
+	}
 }
 
 

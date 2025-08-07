@@ -127,6 +127,8 @@ public:
 
 	// Special node finders.
 	qpwgraph_node *findNode(
+		const qpwgraph_node::NodeIdKey& node_key) const;
+	qpwgraph_node *findNode(
 		uint id, qpwgraph_item::Mode mode, uint type = 0) const;
 
 	QList<qpwgraph_node *> findNodes(
@@ -204,6 +206,15 @@ public:
 	const QStringList& filterNodesList() const;
 
 	bool isFilterNodes(const QString& node_name) const;
+
+	// Merger/unify list management accessors.
+	void setMergerNodesEnabled(bool enabled);
+	bool isMergerNodesEnabled() const;
+
+	void setMergerNodesList(const QStringList& nodes);
+	const QStringList& mergerNodesList() const;
+
+	bool isMergerNodes(const QString& node_name) const;
 
 signals:
 
@@ -327,6 +338,7 @@ private:
 	QPointF           m_pos;
 	qpwgraph_item    *m_item;
 	qpwgraph_connect *m_connect;
+	qpwgraph_port    *m_port2;
 	QRubberBand      *m_rubberband;
 	qreal             m_zoom;
 	bool              m_zoomrange;
@@ -369,6 +381,10 @@ private:
 	// Filter/hide list management.
 	bool        m_filter_enabled;
 	QStringList m_filter_nodes;
+
+	// Merger/unify list management.
+	bool        m_merger_enabled;
+	QStringList m_merger_nodes;
 };
 
 

@@ -260,27 +260,8 @@ void qpwgraph_node_event_info ( void *data, const struct pw_node_info *info )
 					node->node_icon = node_icon;
 				const char *media_name
 					= spa_dict_lookup(info->props, PW_KEY_MEDIA_NAME);
-				if (media_name && ::strlen(media_name) > 0) {
+				if (media_name && ::strlen(media_name) > 0)
 					node->media_name = media_name;
-					if (node->node_nick.isEmpty()) {
-						qpwgraph_pipewire *pw = nullptr;
-						if (node->p)
-							pw = (node->p)->pw;
-						qpwgraph_pipewire::Data::NodeNames *node_names = nullptr;
-						if (pw && pw->data())
-							node_names = (pw->data())->node_names;
-						if (node_names) {
-							node_names->remove(
-								qpwgraph_pipewire::Node::NameKey(node),
-								node->name_num);
-							node->node_name = node->media_name;
-							node->media_name.clear();
-							node_names->insert(
-								qpwgraph_pipewire::Node::NameKey(node),
-								node->name_num);
-						}
-					}
-				}
 				node->node_changed = true;
 				node->node_ready = true;
 				if (object->p->pw)
@@ -1004,9 +985,6 @@ bool qpwgraph_pipewire::findNodePort (
 		}
 	}
 
-	if (*node && m_recycled_nodes.value(qpwgraph_node::NodeIdKey(*node), nullptr))
-		return false;
-
 	if (*node && n->node_changed) {
 		canvas->releaseNode(*node);
 		*node = nullptr;
@@ -1014,9 +992,6 @@ bool qpwgraph_pipewire::findNodePort (
 
 	if (*node)
 		*port = (*node)->findPort(port_id, port_mode, port_type);
-
-	if (*port && m_recycled_ports.value(qpwgraph_port::PortIdKey(*port), nullptr))
-		return false;
 
 	if (add_new && *node == nullptr && !canvas->isFilterNodes(n->node_name)) {
 		QString node_name = n->node_name;
@@ -1035,6 +1010,7 @@ bool qpwgraph_pipewire::findNodePort (
 		(*node)->setNodeNum(n->name_num);
 		(*node)->setNodeLabel(n->media_name);
 		(*node)->setNodePrefix(n->node_nick);
+		(*node)->setNodeNameEx(canvas->isMergerNodes(node_name));
 		n->node_changed = false;
 		qpwgraph_sect::addItem(*node);
 	}
@@ -1129,9 +1105,6 @@ void qpwgraph_pipewire::updateItems (void)
 	// 3. Clean-up all un-marked items...
 	//
 	qpwgraph_sect::resetItems(qpwgraph_pipewire::nodeType());
-
-	m_recycled_nodes.clear();
-	m_recycled_ports.clear();
 }
 
 
@@ -1148,9 +1121,6 @@ void qpwgraph_pipewire::clearItems (void)
 	// Clean-up all items...
 	//
 	qpwgraph_sect::clearItems(qpwgraph_pipewire::nodeType());
-
-	m_recycled_nodes.clear();
-	m_recycled_ports.clear();
 }
 
 
@@ -1271,8 +1241,6 @@ qpwgraph_pipewire::Node *qpwgraph_pipewire::createNode (
 	qpwgraph_item::Mode node_mode,
 	uint node_type )
 {
-	recycleNode(node_id, node_mode);
-
 	Node *node = new Node(node_id);
 	node->node_name = node_name;
 	node->node_nick = node_nick;
@@ -1337,8 +1305,6 @@ qpwgraph_pipewire::Port *qpwgraph_pipewire::createPort (
 	uint port_type,
 	uint port_flags )
 {
-	recyclePort(port_id, node_id, port_mode, port_type);
-
 	Node *node = findNode(node_id);
 	if (node == nullptr)
 		return nullptr;
@@ -1357,6 +1323,7 @@ qpwgraph_pipewire::Port *qpwgraph_pipewire::createPort (
 		node->node_mode2 = qpwgraph_item::Duplex;
 
 	node->node_ports.append(port);
+	node->node_changed = true;
 
 	addObjectEx(port_id, port);
 
@@ -1375,6 +1342,7 @@ void qpwgraph_pipewire::destroyPort ( Port *port )
 
 	port->port_links.clear();
 	node->node_ports.removeAll(port);
+	node->node_changed = true;
 
 	delete port;
 }
@@ -1438,29 +1406,6 @@ qpwgraph_node *qpwgraph_pipewire::findNode (
 		node = qpwgraph_sect::findNode(node_id, qpwgraph_item::Duplex, node_type);
 
 	return node;
-}
-
-
-// Special node recycler...
-void qpwgraph_pipewire::recycleNode (
-	uint node_id, qpwgraph_item::Mode node_mode )
-{
-	qpwgraph_node *node = findNode(node_id, node_mode);
-	if (node)
-		m_recycled_nodes.insert(qpwgraph_node::NodeIdKey(node), node);
-}
-
-
-// Special port recycler...
-void qpwgraph_pipewire::recyclePort (
-	uint port_id, uint node_id, qpwgraph_item::Mode port_mode, uint port_type )
-{
-	qpwgraph_node *node = findNode(node_id, port_mode);
-	if (node) {
-		qpwgraph_port *port = node->findPort(port_id, port_mode, port_type);
-		if (port)
-			m_recycled_ports.insert(qpwgraph_port::PortIdKey(port), port);
-	}
 }
 
 

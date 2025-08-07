@@ -67,14 +67,15 @@ static const char *PortAliasesGroup = "/GraphPortAliases";
 // Constructor.
 qpwgraph_canvas::qpwgraph_canvas ( QWidget *parent )
 	: QGraphicsView(parent), m_state(DragNone), m_item(nullptr),
-		m_connect(nullptr), m_rubberband(nullptr),
+		m_connect(nullptr), m_port2(nullptr), m_rubberband(nullptr),
 		m_zoom(1.0), m_zoomrange(false), m_gesture(false),
 		m_commands(nullptr), m_settings(nullptr),
 		m_patchbay(nullptr), m_patchbay_edit(false),
 		m_patchbay_autopin(true), m_patchbay_autodisconnect(false),
 		m_selected_nodes(0), m_repel_overlapping_nodes(false),
 		m_rename_item(nullptr), m_rename_editor(nullptr), m_renamed(0),
-		m_search_editor(nullptr), m_filter_enabled(false)
+		m_search_editor(nullptr), m_filter_enabled(false),
+		m_merger_enabled(false)
 {
 	m_scene = new QGraphicsScene();
 
@@ -344,8 +345,9 @@ void qpwgraph_canvas::removeItem ( qpwgraph_item *item )
 			emit removed(node);
 			node->removePorts();
 			removeNodeKeys(node);
-			m_nodes.removeAll(node);
 		}
+		if (node)
+			m_nodes.removeAll(node);
 	}
 	else
 	if (item->type() == qpwgraph_port::Type) {
@@ -543,9 +545,15 @@ void qpwgraph_canvas::clearNodes ( uint node_type )
 
 // Special node finders.
 qpwgraph_node *qpwgraph_canvas::findNode (
+	const qpwgraph_node::NodeIdKey& node_key ) const
+{
+	return m_node_ids.value(node_key, nullptr);
+}
+
+qpwgraph_node *qpwgraph_canvas::findNode (
 	uint id, qpwgraph_item::Mode mode, uint type ) const
 {
-	return m_node_ids.value(qpwgraph_node::NodeIdKey(id, mode, type), nullptr);
+	return findNode(qpwgraph_node::NodeIdKey(id, mode, type));
 }
 
 
@@ -840,14 +848,19 @@ void qpwgraph_canvas::mouseMoveEvent ( QMouseEvent *event )
 			// Hovering ports high-lighting...
 			const qreal zval = m_connect->zValue();
 			m_connect->setZValue(-1.0);
+			if (m_port2) {
+				m_port2->setHighlight(false);
+				m_port2 = nullptr;
+			}
 			QGraphicsItem *item = itemAt(pos);
 			if (item && item->type() == qpwgraph_port::Type) {
 				qpwgraph_port *port1 = m_connect->port1();
 				qpwgraph_port *port2 = static_cast<qpwgraph_port *> (item);
-				if (port1 && port2 &&
+				if (port1 && port2 && !port2->isHighlight() &&
 					port1->portType() == port2->portType() &&
 					port1->portMode() != port2->portMode()) {
-					port2->update();
+					m_port2 = port2;
+					m_port2->setHighlight(true);
 				}
 			}
 			m_connect->setZValue(zval);
@@ -937,6 +950,10 @@ void qpwgraph_canvas::mouseReleaseEvent ( QMouseEvent *event )
 				}
 			}
 			// Done with the hovering connection...
+			if (m_port2) {
+				m_port2->setHighlight(false);
+				m_port2 = nullptr;
+			}
 			if (m_connect) {
 				m_connect->disconnect();
 				delete m_connect;
@@ -1416,6 +1433,10 @@ bool qpwgraph_canvas::saveNode ( qpwgraph_node *node ) const
 	if (m_settings == nullptr || node == nullptr)
 		return false;
 
+	// Sure node keys hasn't been released before?...
+	if (findNode(qpwgraph_node::NodeIdKey(node)) != node)
+		return false;
+
 	// Assume node name-keys are to be removed after this...
 	//
 	const int n = nodeNum(node);
@@ -1728,6 +1749,10 @@ void qpwgraph_canvas::clear (void)
 		delete m_rubberband;
 		m_rubberband = nullptr;
 		m_selected.clear();
+	}
+	if (m_port2) {
+		m_port2->setHighlight(false);
+		m_port2 = nullptr;
 	}
 	if (m_connect) {
 		m_connect->disconnect();
@@ -2108,6 +2133,51 @@ bool qpwgraph_canvas::isFilterNodes ( const QString& node_name ) const
 		return false;
 
 	QStringListIterator iter(m_filter_nodes);
+	while (iter.hasNext()) {
+		const QString& node_pattern = iter.next();
+		const QRegularExpression& rx
+			= QRegularExpression(node_pattern,
+				QRegularExpression::CaseInsensitiveOption);
+		if (rx.isValid()) {
+			if (rx.match(node_name).hasMatch())
+				return true;
+		}
+	}
+
+	return false;
+}
+
+
+// Merger/unify list management accessors.
+void qpwgraph_canvas::setMergerNodesEnabled ( bool enabled )
+{
+	m_merger_enabled = enabled;
+}
+
+bool qpwgraph_canvas::isMergerNodesEnabled (void) const
+{
+	return m_merger_enabled;
+}
+
+
+void qpwgraph_canvas::setMergerNodesList ( const QStringList& nodes )
+{
+	m_merger_nodes = nodes;
+}
+
+
+const QStringList& qpwgraph_canvas::mergerNodesList (void) const
+{
+	return m_merger_nodes;
+}
+
+
+bool qpwgraph_canvas::isMergerNodes ( const QString& node_name ) const
+{
+	if (!m_merger_enabled)
+		return false;
+
+	QStringListIterator iter(m_merger_nodes);
 	while (iter.hasNext()) {
 		const QString& node_pattern = iter.next();
 		const QRegularExpression& rx
