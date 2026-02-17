@@ -204,20 +204,12 @@
     <addaction name="helpAboutAction"/>
     <addaction name="helpAboutQtAction"/>
    </widget>
-   <widget class="QMenu" name="menuGrahamButton">
-    <property name="title">
-     <string>GrahamButton</string>
-    </property>
-    <addaction name="actionDunno"/>
-    <addaction name="actionSpread"/>
-   </widget>
    <addaction name="graphMenu"/>
    <addaction name="patchbayMenu"/>
    <addaction name="editMenu"/>
    <addaction name="viewMenu"/>
    <addaction name="separator"/>
    <addaction name="helpMenu"/>
-   <addaction name="menuGrahamButton"/>
   </widget>
   <widget class="QToolBar" name="graphToolbar">
    <property name="allowedAreas">
@@ -250,6 +242,8 @@
    <addaction name="viewZoomResetAction"/>
    <addaction name="separator"/>
    <addaction name="viewZoomRangeAction"/>
+   <addaction name="separator"/>
+   <addaction name="actionSpread"/>
   </widget>
   <widget class="QToolBar" name="patchbayToolbar">
    <property name="allowedAreas">
@@ -1307,14 +1301,22 @@
     <string/>
    </property>
   </action>
-  <action name="actionDunno">
-   <property name="text">
-    <string>Dunno</string>
-   </property>
-  </action>
   <action name="actionSpread">
+   <property name="icon">
+    <iconset resource="qpwgraph.qrc">
+     <normaloff>:/images/viewArrange.png</normaloff>:/images/viewArrange.png</iconset>
+   </property>
    <property name="text">
+    <string>&amp;Spread</string>
+   </property>
+   <property name="iconText">
     <string>Spread</string>
+   </property>
+   <property name="toolTip">
+    <string>Auto-arrange nodes</string>
+   </property>
+   <property name="statusTip">
+    <string>Auto-arrange nodes into columns</string>
    </property>
   </action>
  </widget>

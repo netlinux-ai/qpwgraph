@@ -181,6 +181,9 @@ public:
 	void updatePortTypeColors(uint port_type = 0);
 	void clearPortTypeColors();
 
+	// Auto-arrange nodes into columns by mode.
+	void autoArrangeNodes();
+
 	// Clear all selection.
 	void clearSelection();
 

@@ -1727,6 +1727,85 @@ void qpwgraph_canvas::clearPortTypeColors (void)
 }
 
 
+// Auto-arrange nodes into columns by mode.
+void qpwgraph_canvas::autoArrangeNodes (void)
+{
+	const qreal hgap = 50.0;
+	const qreal vgap = 20.0;
+
+	// Categorize visible nodes into three columns by mode.
+	QList<qpwgraph_node *> left_nodes;   // Output only (sources)
+	QList<qpwgraph_node *> centre_nodes; // Duplex or None
+	QList<qpwgraph_node *> right_nodes;  // Input only (sinks)
+
+	foreach (qpwgraph_node *node, m_nodes) {
+		if (!node->isVisible())
+			continue;
+		switch (node->nodeMode()) {
+		case qpwgraph_item::Output:
+			left_nodes.append(node);
+			break;
+		case qpwgraph_item::Input:
+			right_nodes.append(node);
+			break;
+		default:
+			centre_nodes.append(node);
+			break;
+		}
+	}
+
+	// Sort each column alphabetically by node title.
+	auto cmp = [](qpwgraph_node *a, qpwgraph_node *b) {
+		return a->nodeTitle().toLower() < b->nodeTitle().toLower();
+	};
+	std::sort(left_nodes.begin(), left_nodes.end(), cmp);
+	std::sort(centre_nodes.begin(), centre_nodes.end(), cmp);
+	std::sort(right_nodes.begin(), right_nodes.end(), cmp);
+
+	// Measure max width per column.
+	qreal max_left_w = 0.0;
+	qreal max_centre_w = 0.0;
+
+	foreach (qpwgraph_node *node, left_nodes) {
+		const qreal w = node->sceneBoundingRect().width();
+		if (w > max_left_w) max_left_w = w;
+	}
+	foreach (qpwgraph_node *node, centre_nodes) {
+		const qreal w = node->sceneBoundingRect().width();
+		if (w > max_centre_w) max_centre_w = w;
+	}
+
+	// Calculate column X positions.
+	const qreal x_left = 0.0;
+	const qreal x_centre = max_left_w + hgap;
+	const qreal x_right  = max_left_w + max_centre_w + 2.0 * hgap;
+
+	// Create undo command (empty node list, addItem individually).
+	QList<qpwgraph_node *> empty_list;
+	qpwgraph_move_command *move_command
+		= new qpwgraph_move_command(this, empty_list, QPointF(), QPointF());
+
+	// Helper lambda to position a column of nodes.
+	auto placeColumn = [&](QList<qpwgraph_node *>& nodes, qreal x) {
+		qreal y = 0.0;
+		foreach (qpwgraph_node *node, nodes) {
+			const QPointF old_pos = node->pos();
+			const QPointF new_pos = snapPos(QPointF(x, y));
+			node->setPos(new_pos);
+			move_command->addItem(node, old_pos, new_pos);
+			y += node->sceneBoundingRect().height() + vgap;
+		}
+	};
+
+	placeColumn(left_nodes, x_left);
+	placeColumn(centre_nodes, x_centre);
+	placeColumn(right_nodes, x_right);
+
+	m_commands->push(move_command);
+	emitChanged();
+}
+
+
 // Clear all selection.
 void qpwgraph_canvas::clearSelection (void)
 {
