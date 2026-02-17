@@ -46,6 +46,7 @@ static const char *ViewSortTypeKey  = "/SortType";
 static const char *ViewSortOrderKey = "/SortOrder";
 static const char *ViewRepelOverlappingNodesKey = "/RepelOverlappingNodes";
 static const char *ViewConnectThroughNodesKey = "/ConnectThroughNodes";
+static const char *ViewHidePulseVolumeKey = "/HidePulseVolume";
 
 static const char *PatchbayGroup    = "/Patchbay";
 static const char *PatchbayDirKey   = "/Dir";
@@ -100,6 +101,7 @@ qpwgraph_config::qpwgraph_config ( QSettings *settings, bool owner )
 		m_sorttype(0), m_sortorder(0),
 		m_repelnodes(false),
 		m_cthrunodes(false),
+		m_hidepulsevol(false),
 		m_patchbay_toolbar(false),
 		m_patchbay_activated(false),
 		m_patchbay_exclusive(false),
@@ -257,6 +259,18 @@ void qpwgraph_config::setConnectThroughNodes ( bool cthrunodes )
 bool qpwgraph_config::isConnectThroughNodes (void) const
 {
 	return m_cthrunodes;
+}
+
+
+void qpwgraph_config::setHidePulseVolume ( bool hidepulsevol )
+{
+	m_hidepulsevol = hidepulsevol;
+}
+
+
+bool qpwgraph_config::isHidePulseVolume (void) const
+{
+	return m_hidepulsevol;
 }
 
 
@@ -561,6 +575,7 @@ bool qpwgraph_config::restoreState ( QMainWindow *widget )
 	m_sortorder = m_settings->value(ViewSortOrderKey, 0).toInt();
 	m_repelnodes = m_settings->value(ViewRepelOverlappingNodesKey, false).toBool();
 	m_cthrunodes = m_settings->value(ViewConnectThroughNodesKey, false).toBool();
+	m_hidepulsevol = m_settings->value(ViewHidePulseVolumeKey, false).toBool();
 	m_settings->endGroup();
 
 	m_settings->beginGroup(GraphGeometryGroup);
@@ -661,6 +676,7 @@ bool qpwgraph_config::saveState ( QMainWindow *widget ) const
 	m_settings->setValue(ViewSortOrderKey, m_sortorder);
 	m_settings->setValue(ViewRepelOverlappingNodesKey, m_repelnodes);
 	m_settings->setValue(ViewConnectThroughNodesKey, m_cthrunodes);
+	m_settings->setValue(ViewHidePulseVolumeKey, m_hidepulsevol);
 	m_settings->endGroup();
 
 	m_settings->beginGroup(GraphGeometryGroup);

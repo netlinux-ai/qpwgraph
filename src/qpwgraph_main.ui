@@ -193,6 +193,7 @@
     <addaction name="separator"/>
     <addaction name="viewRepelOverlappingNodesAction"/>
     <addaction name="viewConnectThroughNodesAction"/>
+    <addaction name="viewHidePulseVolumeAction"/>
     <addaction name="separator"/>
     <addaction name="viewRefreshAction"/>
    </widget>
@@ -1247,6 +1248,26 @@
    </property>
    <property name="statusTip">
     <string>Whether to draw connectors through or around nodes</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+  </action>
+  <action name="viewHidePulseVolumeAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Hide &amp;PulseAudio Volume</string>
+   </property>
+   <property name="iconText">
+    <string>Hide PulseAudio Volume</string>
+   </property>
+   <property name="toolTip">
+    <string>Hide PulseAudio volume nodes</string>
+   </property>
+   <property name="statusTip">
+    <string>Hide PulseAudio volume/infrastructure nodes from the graph</string>
    </property>
    <property name="shortcut">
     <string/>

@@ -75,7 +75,7 @@ qpwgraph_canvas::qpwgraph_canvas ( QWidget *parent )
 		m_selected_nodes(0), m_repel_overlapping_nodes(false),
 		m_rename_item(nullptr), m_rename_editor(nullptr), m_renamed(0),
 		m_search_editor(nullptr), m_filter_enabled(false),
-		m_merger_enabled(false)
+		m_merger_enabled(false), m_hide_pulse_volume(false)
 {
 	m_scene = new QGraphicsScene();
 
@@ -2190,6 +2190,18 @@ bool qpwgraph_canvas::isMergerNodes ( const QString& node_name ) const
 	}
 
 	return false;
+}
+
+
+// Hide PulseAudio volume/infrastructure nodes accessors.
+void qpwgraph_canvas::setHidePulseVolume ( bool on )
+{
+	m_hide_pulse_volume = on;
+}
+
+bool qpwgraph_canvas::isHidePulseVolume (void) const
+{
+	return m_hide_pulse_volume;
 }
 
 

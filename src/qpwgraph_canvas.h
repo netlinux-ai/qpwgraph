@@ -216,6 +216,10 @@ public:
 
 	bool isMergerNodes(const QString& node_name) const;
 
+	// Hide PulseAudio volume/infrastructure nodes accessors.
+	void setHidePulseVolume(bool on);
+	bool isHidePulseVolume() const;
+
 signals:
 
 	// Node factory notifications.
@@ -385,6 +389,9 @@ private:
 	// Merger/unify list management.
 	bool        m_merger_enabled;
 	QStringList m_merger_nodes;
+
+	// Hide PulseAudio volume/infrastructure nodes.
+	bool        m_hide_pulse_volume;
 };
 
 

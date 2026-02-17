@@ -139,6 +139,8 @@ struct qpwgraph_pipewire::Node : public qpwgraph_pipewire::Object
 	bool node_changed;
 	bool node_ready;
 	uint name_num;
+	bool is_pulse;
+	bool is_stream;
 };
 
 struct qpwgraph_pipewire::Port : public qpwgraph_pipewire::Object
@@ -258,6 +260,14 @@ void qpwgraph_node_event_info ( void *data, const struct pw_node_info *info )
 				}
 				if (!node_icon.isNull())
 					node->node_icon = node_icon;
+				const char *client_api2
+					= spa_dict_lookup(info->props, PW_KEY_CLIENT_API);
+				if (client_api2 && ::strlen(client_api2) > 0) {
+					if (::strcmp(client_api2, "pulse") == 0 ||
+						::strcmp(client_api2, "pipewire-pulse") == 0) {
+						node->is_pulse = true;
+					}
+				}
 				const char *media_name
 					= spa_dict_lookup(info->props, PW_KEY_MEDIA_NAME);
 				if (media_name && ::strlen(media_name) > 0)
@@ -460,6 +470,7 @@ void qpwgraph_registry_event_global (
 		const QString node_nick(nick ? nick : str);
 		qpwgraph_item::Mode node_mode = qpwgraph_item::None;
 		uint node_types = qpwgraph_pipewire::Node::None;
+		bool is_stream = false;
 		str = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
 		if (str) {
 			const QString media_class(str);
@@ -476,6 +487,8 @@ void qpwgraph_registry_event_global (
 				node_types |= qpwgraph_pipewire::Node::Video;
 			if (media_class.contains("Midi"))
 				node_types |= qpwgraph_pipewire::Node::Midi;
+			if (media_class.contains("Stream"))
+				is_stream = true;
 		}
 		if (node_mode == qpwgraph_item::None) {
 			str = spa_dict_lookup(props, PW_KEY_MEDIA_CATEGORY);
@@ -485,8 +498,12 @@ void qpwgraph_registry_event_global (
 					node_mode = qpwgraph_item::Duplex;
 			}
 		}
-		if (pw->createNode(id, node_name, node_nick, node_mode, node_types))
+		qpwgraph_pipewire::Node *n
+			= pw->createNode(id, node_name, node_nick, node_mode, node_types);
+		if (n) {
+			n->is_stream = is_stream;
 			++nchanged;
+		}
 	}
 	else
 	if (::strcmp(type, PW_TYPE_INTERFACE_Port) == 0) {
@@ -993,7 +1010,8 @@ bool qpwgraph_pipewire::findNodePort (
 	if (*node)
 		*port = (*node)->findPort(port_id, port_mode, port_type);
 
-	if (add_new && *node == nullptr && !canvas->isFilterNodes(n->node_name)) {
+	if (add_new && *node == nullptr && !canvas->isFilterNodes(n->node_name)
+		&& !(canvas->isHidePulseVolume() && n->is_pulse && !n->is_stream)) {
 		QString node_name = n->node_name;
 		if ((p->port_flags & Port::Physical) == Port::None) {
 			if (p->port_flags & Port::Monitor) {
@@ -1251,6 +1269,8 @@ qpwgraph_pipewire::Node *qpwgraph_pipewire::createNode (
 	node->node_changed = false;
 	node->node_ready = false;
 	node->name_num = 0;
+	node->is_pulse = false;
+	node->is_stream = false;
 
 
 	Data::NodeNames *node_names = nullptr;

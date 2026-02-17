@@ -406,6 +406,9 @@ qpwgraph_main::qpwgraph_main (
 	QObject::connect(m_ui.viewConnectThroughNodesAction,
 		SIGNAL(triggered(bool)),
 		SLOT(viewConnectThroughNodes(bool)));
+	QObject::connect(m_ui.viewHidePulseVolumeAction,
+		SIGNAL(triggered(bool)),
+		SLOT(viewHidePulseVolume(bool)));
 
 	m_ui.viewColorsPipewireAudioAction->setData(qpwgraph_pipewire::audioPortType());
 	m_ui.viewColorsPipewireMidiAction->setData(qpwgraph_pipewire::midiPortType());
@@ -1058,6 +1061,13 @@ void qpwgraph_main::viewConnectThroughNodes ( bool on )
 {
 	qpwgraph_connect::setConnectThroughNodes(on);
 	m_ui.graphCanvas->updateConnects();
+}
+
+
+void qpwgraph_main::viewHidePulseVolume ( bool on )
+{
+	m_ui.graphCanvas->setHidePulseVolume(on);
+	viewRefresh();
 }
 
 
@@ -1888,6 +1898,7 @@ void qpwgraph_main::restoreState (void)
 	m_ui.viewZoomRangeAction->setChecked(m_config->isZoomRange());
 	m_ui.viewRepelOverlappingNodesAction->setChecked(m_config->isRepelOverlappingNodes());
 	m_ui.viewConnectThroughNodesAction->setChecked(m_config->isConnectThroughNodes());
+	m_ui.viewHidePulseVolumeAction->setChecked(m_config->isHidePulseVolume());
 
 	const qpwgraph_port::SortType sort_type
 		= qpwgraph_port::SortType(m_config->sortType());
@@ -1929,6 +1940,7 @@ void qpwgraph_main::restoreState (void)
 	viewZoomRange(m_config->isZoomRange());
 	viewRepelOverlappingNodes(m_config->isRepelOverlappingNodes());
 	viewConnectThroughNodes(m_config->isConnectThroughNodes());
+	viewHidePulseVolume(m_config->isHidePulseVolume());
 
 	m_ui.graphCanvas->restoreState();
 
@@ -1951,6 +1963,7 @@ void qpwgraph_main::saveState (void)
 	m_config->setSortOrder(int(qpwgraph_port::sortOrder()));
 	m_config->setRepelOverlappingNodes(m_ui.viewRepelOverlappingNodesAction->isChecked());
 	m_config->setConnectThroughNodes(m_ui.viewConnectThroughNodesAction->isChecked());
+	m_config->setHidePulseVolume(m_ui.viewHidePulseVolumeAction->isChecked());
 
 	m_config->setStatusbar(m_ui.StatusBar->isVisible());
 	m_config->setToolbar(m_ui.graphToolbar->isVisible());

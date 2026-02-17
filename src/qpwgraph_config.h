@@ -81,6 +81,9 @@ public:
 	void setConnectThroughNodes(bool cthrunodes);
 	bool isConnectThroughNodes() const;
 
+	void setHidePulseVolume(bool hidepulsevol);
+	bool isHidePulseVolume() const;
+
 	void setPatchbayToolbar(bool toolbar);
 	bool isPatchbayToolbar() const;
 
@@ -170,6 +173,7 @@ private:
 
 	bool        m_repelnodes;
 	bool        m_cthrunodes;
+	bool        m_hidepulsevol;
 
 	bool        m_patchbay_toolbar;
 	QString     m_patchbay_dir;
