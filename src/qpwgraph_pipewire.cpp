@@ -1011,7 +1011,8 @@ bool qpwgraph_pipewire::findNodePort (
 		*port = (*node)->findPort(port_id, port_mode, port_type);
 
 	if (add_new && *node == nullptr && !canvas->isFilterNodes(n->node_name)
-		&& !(canvas->isHidePulseVolume() && n->is_pulse && !n->is_stream)) {
+		&& !(canvas->isHidePulseVolume() && n->is_pulse
+			&& (!n->is_stream || n->node_name.contains("PulseAudio Volume Control")))) {
 		QString node_name = n->node_name;
 		if ((p->port_flags & Port::Physical) == Port::None) {
 			if (p->port_flags & Port::Monitor) {
