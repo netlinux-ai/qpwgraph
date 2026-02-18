@@ -33,7 +33,7 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          base=$(grep 'VERSION' CMakeLists.txt | sed -n '/project/,/)/s/.*VERSION \([0-9.]*\).*/\1/p')
+          base=$(sed -n '/^project/,/)/s/.*VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
           rev=${{ github.run_number }}
           echo "version=${base}-${rev}netlinux1" >> "$GITHUB_OUTPUT"
           echo "tag=v${base}-${rev}netlinux1" >> "$GITHUB_OUTPUT"
