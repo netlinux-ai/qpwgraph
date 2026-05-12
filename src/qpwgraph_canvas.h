@@ -1,7 +1,7 @@
 // qpwgraph_canvas.h
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -111,8 +111,10 @@ public:
 	bool canDisconnect() const;
 
 	// Edit predicates.
-	bool canRenameItem() const;
 	bool canSearchItem() const;
+	bool canRenameItem() const;
+
+	bool canArrangeNodes() const;
 
 	// Zooming methods.
 	void setZoom(qreal zoom);
@@ -120,6 +122,8 @@ public:
 
 	void setZoomRange(bool zoomrange);
 	bool isZoomRange() const;
+
+	void centerView(bool showSelected);
 
 	// Clean-up all un-marked nodes...
 	void resetNodes(uint node_type);
@@ -254,8 +258,10 @@ public slots:
 	void selectInvert();
 
 	// Edit actions.
-	void renameItem();
 	void searchItem();
+	void renameItem();
+
+	void arrangeNodes();
 
 	// Discrete zooming actions.
 	void zoomIn();

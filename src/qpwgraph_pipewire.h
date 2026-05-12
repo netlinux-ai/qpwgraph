@@ -1,7 +1,7 @@
 // qpwgraph_pipewire.h
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -59,8 +59,8 @@ public:
 	void updateItems();
 	void clearItems();
 
-	// Special port-type colors defaults (virtual).
-	void resetPortTypeColors();
+	// Special port-type colors defaults.
+	static void resetPortTypeColors(qpwgraph_canvas *canvas);
 
 	// PipeWire node type inquirer.
 	static bool isNodeType(uint node_type);
@@ -125,11 +125,15 @@ public:
 	Link *createLink(uint link_id, uint port1_id, uint port2_id);
 	void destroyLink(Link *link);
 
+	// Remote name accessors.
+	void setRemoteName(const QString& remote_name);
+	const QString& remoteName() const;
+
 signals:
 
 	void changed();
 
-protected slots:
+public slots:
 
 	void reset();
 
@@ -158,6 +162,9 @@ private:
 	// Callback sanity mutex.
 	QMutex m_mutex1;
 	QMutex m_mutex2;
+
+	// PipeWire remote daemon name.
+	QString m_remote_name;
 };
 
 

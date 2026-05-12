@@ -1,7 +1,7 @@
 // qpwgraph_canvas.cpp
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -23,6 +23,7 @@
 
 #include "qpwgraph_connect.h"
 #include "qpwgraph_patchbay.h"
+#include "qpwgraph_toposort.h"
 
 #include <QGraphicsScene>
 #include <QRegularExpression>
@@ -43,7 +44,6 @@
 #include <QGestureEvent>
 #include <QPinchGesture>
 
-#include <algorithm>
 
 #include <cmath>
 
@@ -445,6 +445,12 @@ bool qpwgraph_canvas::canDisconnect (void) const
 
 
 // Edit predicates.
+bool qpwgraph_canvas::canSearchItem (void) const
+{
+	return !m_nodes.isEmpty();
+}
+
+
 bool qpwgraph_canvas::canRenameItem (void) const
 {
 	qpwgraph_item *item = currentItem();
@@ -455,9 +461,16 @@ bool qpwgraph_canvas::canRenameItem (void) const
 }
 
 
-bool qpwgraph_canvas::canSearchItem (void) const
+bool qpwgraph_canvas::canArrangeNodes (void) const
 {
-	return !m_nodes.isEmpty();
+	int n = 0;
+
+	foreach (QGraphicsItem *item, m_scene->selectedItems()) {
+		if (item->type() == qpwgraph_node::Type && ++n > 1)
+			return true;
+	}
+
+	return false;
 }
 
 
@@ -1212,6 +1225,13 @@ void qpwgraph_canvas::selectInvert (void)
 
 
 // Edit actions.
+void qpwgraph_canvas::searchItem (void)
+{
+	if (!m_search_editor->isEnabled())
+		startSearchEditor();
+}
+
+
 void qpwgraph_canvas::renameItem (void)
 {
 	qpwgraph_item *item = currentItem();
@@ -1278,13 +1298,6 @@ void qpwgraph_canvas::renameItem (void)
 }
 
 
-void qpwgraph_canvas::searchItem (void)
-{
-	if (!m_search_editor->isEnabled())
-		startSearchEditor();
-}
-
-
 // Update editors position and size.
 void qpwgraph_canvas::updateRenameEditor (void)
 {
@@ -1338,6 +1351,22 @@ void qpwgraph_canvas::zoomFit (void)
 void qpwgraph_canvas::zoomReset (void)
 {
 	setZoom(1.0);
+}
+
+
+// Centers the view on the middle of the graph, then makes sure each selected
+// item is visible if showSelected is true.
+void qpwgraph_canvas::centerView (bool showSelected)
+{
+	m_scene->setSceneRect(boundingRect(true));
+
+	QGraphicsView::centerOn(m_scene->itemsBoundingRect().center());
+
+	if (showSelected) {
+		foreach (QGraphicsItem *item, m_scene->selectedItems()) {
+			ensureVisible(item);
+		}
+	}
 }
 
 
@@ -2022,6 +2051,45 @@ void qpwgraph_canvas::repelOverlappingNodesAll (
 {
 	foreach (qpwgraph_node *node, m_nodes)
 		repelOverlappingNodes(node, move_command);
+}
+
+
+// Node rearrangement by topological sort.
+//
+void qpwgraph_canvas::arrangeNodes (void)
+{
+	QList<qpwgraph_node *> nodes;
+	foreach (QGraphicsItem *item, m_scene->selectedItems()) {
+		if (item->type() == qpwgraph_node::Type) {
+			qpwgraph_node *node = static_cast<qpwgraph_node *> (item);
+			if (node)
+				nodes.append(node);
+		}
+	}
+
+	if (nodes.size() < 2)
+		return;
+
+	qpwgraph_toposort topo(nodes);
+	auto newPositions = topo.arrange(QGraphicsView::viewport()->rect());
+
+	qpwgraph_move_command *mc = new qpwgraph_move_command(this, newPositions);
+
+	foreach (qpwgraph_node *n, newPositions.keys()) {
+		n->setPos(newPositions.value(n));
+	}
+
+	if (isRepelOverlappingNodes()) {
+		foreach (qpwgraph_node *node, nodes)
+			repelOverlappingNodes(node, mc);
+	}
+
+	m_commands->push(mc);
+
+	centerView(true);
+
+	// Repaint to avoid glitch trails
+	m_scene->update();
 }
 
 

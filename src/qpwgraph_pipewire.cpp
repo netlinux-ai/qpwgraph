@@ -1,7 +1,7 @@
 // qpwgraph_pipewire.cpp
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -588,6 +588,19 @@ const struct pw_registry_events qpwgraph_registry_events = {
 
 // core-events...
 static
+void qpwgraph_core_event_info ( void *data, const struct pw_core_info *info )
+{
+	qpwgraph_pipewire *pw = static_cast<qpwgraph_pipewire *> (data);
+	qpwgraph_pipewire::Data *pd = pw->data();
+#ifdef CONFIG_DEBUG
+	qDebug("qpwgraph_core_event_info[%p]: name:%s", pd, info->name);
+#endif
+
+	pw->setRemoteName(info->name);
+	pw->changedNotify();
+}
+
+static
 void qpwgraph_core_event_done ( void *data, uint32_t id, int seq )
 {
 	qpwgraph_pipewire *pw = static_cast<qpwgraph_pipewire *> (data);
@@ -631,7 +644,7 @@ void qpwgraph_core_event_error (
 static
 const struct pw_core_events qpwgraph_core_events = {
 	.version = PW_VERSION_CORE_EVENTS,
-	.info = nullptr,
+	.info = qpwgraph_core_event_info,
 	.done = qpwgraph_core_event_done,
 	.error = qpwgraph_core_event_error,
 };
@@ -686,8 +699,6 @@ const struct pw_proxy_events qpwgraph_link_proxy_events = {
 qpwgraph_pipewire::qpwgraph_pipewire ( qpwgraph_canvas *canvas )
 	: qpwgraph_sect(canvas), m_data(nullptr)
 {
-	resetPortTypeColors();
-
 	if (!open())
 		QTimer::singleShot(3000, this, SLOT(reset()));
 }
@@ -735,8 +746,14 @@ bool qpwgraph_pipewire::open (void)
 		return false;
 	}
 
+	struct pw_properties *props = nullptr;
+	if (!m_remote_name.isEmpty()) {
+		props = pw_properties_new(PW_KEY_REMOTE_NAME,
+			m_remote_name.toUtf8().constData(), nullptr);
+	}
+
 	m_data->core = pw_context_connect(m_data->context,
-		nullptr /*properties*/, 0 /*user_data size*/);
+		props, 0 /*user_data size*/);
 	if (m_data->core == nullptr) {
 		qDebug("pw_context_connect: Can't connect context.");
 		pw_thread_loop_unlock(m_data->loop);
@@ -749,7 +766,7 @@ bool qpwgraph_pipewire::open (void)
 	}
 
 	pw_core_add_listener(m_data->core,
-		 &m_data->core_listener, &qpwgraph_core_events, this);
+		&m_data->core_listener, &qpwgraph_core_events, this);
 
 	m_data->registry = pw_core_get_registry(m_data->core,
 		PW_VERSION_REGISTRY, 0 /*user_data size*/);
@@ -1024,19 +1041,23 @@ bool qpwgraph_pipewire::findNodePort (
 				node_name += "[Control]";
 			}
 		}
-		*node = new qpwgraph_node(node_id, node_name, node_mode, node_type);
-		(*node)->setNodeIcon(n->node_icon);
-		(*node)->setNodeNum(n->name_num);
-		(*node)->setNodeLabel(n->media_name);
-		(*node)->setNodePrefix(n->node_nick);
-		(*node)->setNodeNameEx(canvas->isMergerNodes(node_name));
-		n->node_changed = false;
-		qpwgraph_sect::addItem(*node);
+		if (!canvas->isFilterNodes(node_name)) {
+			*node = new qpwgraph_node(node_id, node_name, node_mode, node_type);
+			(*node)->setNodeIcon(n->node_icon);
+			(*node)->setNodeNum(n->name_num);
+			(*node)->setNodeLabel(n->media_name);
+			(*node)->setNodePrefix(n->node_nick);
+			(*node)->setNodeNameEx(canvas->isMergerNodes(node_name));
+			(*node)->setNodeLabelEx(true);
+			n->node_changed = false;
+			qpwgraph_sect::addItem(*node);
+		}
 	}
 
 	if (add_new && *port == nullptr && *node) {
 		*port = (*node)->addPort(port_id, p->port_name, port_mode, port_type);
 		(*port)->updatePortTypeColors(canvas);
+		(*port)->setPortLabelEx(true);
 		qpwgraph_sect::addItem(*port);
 	}
 
@@ -1143,10 +1164,9 @@ void qpwgraph_pipewire::clearItems (void)
 }
 
 
-// Special port-type colors defaults (virtual).
-void qpwgraph_pipewire::resetPortTypeColors (void)
+// Special port-type colors defaults (static).
+void qpwgraph_pipewire::resetPortTypeColors ( qpwgraph_canvas *canvas )
 {
-	qpwgraph_canvas *canvas = qpwgraph_sect::canvas();
 	if (canvas) {
 		canvas->setPortTypeColor(
 			qpwgraph_pipewire::audioPortType(),
@@ -1427,6 +1447,19 @@ qpwgraph_node *qpwgraph_pipewire::findNode (
 		node = qpwgraph_sect::findNode(node_id, qpwgraph_item::Duplex, node_type);
 
 	return node;
+}
+
+
+// Remote name accessors.
+void qpwgraph_pipewire::setRemoteName ( const QString& remote_name )
+{
+	m_remote_name = remote_name;
+}
+
+
+const QString& qpwgraph_pipewire::remoteName (void) const
+{
+	return m_remote_name;
 }
 
 

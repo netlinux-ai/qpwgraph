@@ -1,12 +1,12 @@
 cmake_minimum_required (VERSION 3.15)
 
 project(qpwgraph
-  VERSION 0.9.4
+  VERSION 1.0.1
   DESCRIPTION "A PipeWire Graph Qt GUI Interface"
   HOMEPAGE_URL "https://gitlab.freedesktop.org/rncbc/qpwgraph"
   LANGUAGES C CXX)
 
-set (PROJECT_COPYRIGHT "Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.")
+set (PROJECT_COPYRIGHT "Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.")
 set (PROJECT_DOMAIN    "rncbc.org")
 
 execute_process (
@@ -49,8 +49,9 @@ option (CONFIG_ALSA_MIDI "Enable ALSA MIDI support (default=yes)" 1)
 # Enable system-tray icon support option.
 option (CONFIG_SYSTEM_TRAY "Enable system-tray icon support (default=yes)" 1)
 
-# Enable Wayland support option.
-option (CONFIG_WAYLAND "Enable Wayland support (EXPERIMENTAL) (default=no)" 0)
+# Enable unique/single instance.
+option (CONFIG_XUNIQUE "Enable unique/single instance (default=yes)" 1)
+
 
 # Enable Qt6 build preference.
 option (CONFIG_QT6 "Enable Qt6 build (default=yes)" 1)
@@ -95,4 +96,6 @@ message   ("\n  ${PROJECT_NAME} ${PROJECT_VERSION} (Qt ${QT_VERSION})")
 message   ("\n  Build target . . . . . . . . . . . . . . . . . . .: ${CONFIG_BUILD_TYPE}\n")
 show_option ("  ALSA MIDI support  . . . . . . . . . . . . . . . ." CONFIG_ALSA_MIDI)
 show_option ("  System-tray icon support . . . . . . . . . . . . ." CONFIG_SYSTEM_TRAY)
+message     ("")
+show_option ("  Unique/Single instance support . . . . . . . . . ." CONFIG_XUNIQUE)
 message   ("\n  Install prefix . . . . . . . . . . . . . . . . . .: ${CMAKE_INSTALL_PREFIX}\n")

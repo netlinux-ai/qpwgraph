@@ -1,7 +1,7 @@
 // qpwgraph_main.h
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -43,6 +43,7 @@ class qpwgraph_thumb;
 class QResizeEvent;
 class QCloseEvent;
 
+class QLabel;
 class QSlider;
 class QSpinBox;
 class QComboBox;
@@ -134,7 +135,7 @@ protected slots:
 
 	void patchbayManage();
 
-	// Main menu slots.
+	// View menu slots.
 	void viewMenubar(bool on);
 	void viewGraphToolbar(bool on);
 	void viewPatchbayToolbar(bool on);
@@ -160,6 +161,7 @@ protected slots:
 	void viewConnectThroughNodes(bool on);
 	void viewHidePulseVolume(bool on);
 
+	// Help menu slots.
 	void helpAbout();
 	void helpAboutQt();
 
@@ -242,6 +244,9 @@ private:
 	int m_ins, m_mids, m_outs;
 
 	int m_repel_overlapping_nodes;
+
+	QLabel *m_status_label;
+	QLabel *m_remote_label;
 
 	QSlider  *m_zoom_slider;
 	QSpinBox *m_zoom_spinbox;

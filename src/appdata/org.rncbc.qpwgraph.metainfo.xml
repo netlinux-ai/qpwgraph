@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2021-2024 Rui Nuno Capela <rncbc@rncbc.org> -->
+<!-- Copyright 2021-2026 Rui Nuno Capela <rncbc@rncbc.org> -->
 <component type="desktop">
  <id>org.rncbc.qpwgraph</id>
  <metadata_license>FSFAP</metadata_license>
@@ -22,6 +22,7 @@
   </screenshot>
  </screenshots>
  <keywords>
+  <keyword>PipeWire</keyword>
   <keyword>AudioVideo</keyword>
   <keyword>Audio</keyword>
   <keyword>Video</keyword>
@@ -30,12 +31,14 @@
   <keyword>Qt</keyword>
  </keywords>
  <url type="homepage">https://gitlab.freedesktop.org/rncbc/qpwgraph</url>
- <developer_name>rncbc aka. Rui Nuno Capela</developer_name>
+ <url type="vcs-browser">https://gitlab.freedesktop.org/rncbc/qpwgraph</url>
+ <developer id="rncbc.org">
+   <name>rncbc aka. Rui Nuno Capela</name>
+ </developer>
  <update_contact>rncbc@rncbc.org</update_contact>
  <releases>
-  <release version="0.9.4" date="2025-06-21" urgency="low" />
-  <release version="0.9.3" date="2025-06-02" urgency="low" />
-  <release version="0.9.2" date="2025-05-17" urgency="high" />
+  <release version="1.0.1" date="2026-04-21" urgency="low" />
+  <release version="1.0.0" date="2026-03-17" urgency="low" />
  </releases>
  <content_rating type="oars-1.0"/>
 </component>

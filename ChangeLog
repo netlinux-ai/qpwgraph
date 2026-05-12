@@ -6,11 +6,64 @@ ChangeLog
 
 GIT HEAD
 
-- Make all node-names in merger list (Graph/Options.../Merger)
-  implicitly exclusive for Patchbay persistence. (GL Issue #105)
-  (EXPERIMENTAL)
+- PipeWire node and port IDs are now shown on hovering tooltips.
 
-- Cope with in-flight node/port count changing. (EXPERIMENTAL)
+- Make sure thumb-view widget background is filled/opaque (ie.
+  not transparent)
+
+
+1.0.1  2026-04-21  A Spring'26 Release.
+
+- Added remote daemon name and modified state labels to the main
+  status-bar.
+
+- Added command line option to connect on a remote PipeWire
+  daemon context, by name (-r, --remote); nb. PIPEWIRE_REMOTE
+  environment variable takes precedence though.
+
+- Separate the singleton/unique application instance setup logic
+  from system-tray icon build option; add PipeWire remote-name,
+  if any, to singleton/unique application instance identifier.
+
+- Settling on all boards to next development cycle (Qt >= 6.11)
+
+
+1.0.0  2026-03-17  An Early-Spring'26 Release.
+
+- Configured ALSA MIDI port colors now reset/restored properly.
+
+
+0.9.9  2026-02-10  A Mid-Winter'26 Release.
+
+- Most probably the first and last release candidate ever ;)
+
+
+0.9.8  2025-12-29  An End-of-Year'25 Beta Release.
+
+- Fixed 'mime-info' file to the correct MIME-type icon names.
+
+
+0.9.7  2025-11-14  An Autumn'25 Beta Release.
+
+- Add topological sort node arrangement (cf. View/Arrange Nodes;
+  by Mike Bourgeous)
+
+
+0.9.6  2025-10-06  An Early-Fall'25 Beta Release.
+
+- Allow the complete node name to get the same treatment in the
+  Graph/Options.../Filter as same for Merger.
+
+- Get rid of CONFIG_WAYLAND build config option; add underlying
+  platform name (eg. xcb, wayland) to Qt version string.
+
+
+0.9.5  2025-08-15  A Mid-Summer'25 Beta Release.
+
+- Make all node-names in merger list (Graph/Options.../Merger)
+  implicitly exclusive for Patchbay persistence.
+
+- Cope with in-flight node/port count changing.
 
 
 0.9.4  2025-06-21  An Early-Summer'25 Beta Release.

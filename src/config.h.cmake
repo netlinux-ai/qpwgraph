@@ -30,9 +30,8 @@
 /* Define if system-tray icon support is available. */
 #cmakedefine CONFIG_SYSTEM_TRAY @CONFIG_SYSTEM_TRAY@
 
-
-/* Define if Wayland is supported */
-#cmakedefine CONFIG_WAYLAND @CONFIG_WAYLAND@
+/* Define if unique/single instance is enabled. */
+#cmakedefine CONFIG_XUNIQUE @CONFIG_XUNIQUE@
 
 
 #endif // __CONFIG_H

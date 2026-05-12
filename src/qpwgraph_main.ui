@@ -3,7 +3,7 @@
  <author>rncbc aka Rui Nuno Capela</author>
  <comment>qpwgraph - A PipeWire Graph Qt GUI Interface
 
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -194,6 +194,8 @@
     <addaction name="viewRepelOverlappingNodesAction"/>
     <addaction name="viewConnectThroughNodesAction"/>
     <addaction name="viewHidePulseVolumeAction"/>
+    <addaction name="separator"/>
+    <addaction name="viewArrangeNodesAction"/>
     <addaction name="separator"/>
     <addaction name="viewRefreshAction"/>
    </widget>
@@ -641,27 +643,6 @@
     <string>Ctrl+I</string>
    </property>
   </action>
-  <action name="editRenameItemAction">
-   <property name="icon">
-    <iconset resource="qpwgraph.qrc">
-     <normaloff>:/images/itemEdit.png</normaloff>:/images/itemEdit.png</iconset>
-   </property>
-   <property name="text">
-    <string>&amp;Rename...</string>
-   </property>
-   <property name="iconText">
-    <string>Rename Item</string>
-   </property>
-   <property name="toolTip">
-    <string>Rename item</string>
-   </property>
-   <property name="statusTip">
-    <string>Rename item</string>
-   </property>
-   <property name="shortcut">
-    <string>F2</string>
-   </property>
-  </action>
   <action name="editSearchItemAction">
    <property name="icon">
     <iconset resource="qpwgraph.qrc">
@@ -681,6 +662,26 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="editRenameItemAction">
+   <property name="icon">
+    <iconset resource="qpwgraph.qrc">:/images/itemEdit.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Rename...</string>
+   </property>
+   <property name="iconText">
+    <string>Rename Item</string>
+   </property>
+   <property name="toolTip">
+    <string>Rename item</string>
+   </property>
+   <property name="statusTip">
+    <string>Rename item</string>
+   </property>
+   <property name="shortcut">
+    <string>F2</string>
    </property>
   </action>
   <action name="viewMenubarAction">
@@ -1262,6 +1263,23 @@
    </property>
    <property name="statusTip">
     <string>Hide PulseAudio volume/infrastructure nodes from the graph</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+  </action>
+  <action name="viewArrangeNodesAction">
+   <property name="text">
+    <string>&amp;Arrange Nodes</string>
+   </property>
+   <property name="iconText">
+    <string>Arrange Nodes</string>
+   </property>
+   <property name="toolTip">
+    <string>Arrange nodes (topological sort)</string>
+   </property>
+   <property name="statusTip">
+    <string>Use topological sort to arrange selected nodes following signal path from left to right.</string>
    </property>
    <property name="shortcut">
     <string/>

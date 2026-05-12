@@ -1,7 +1,7 @@
 // qpwgraph.cpp
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 #include <QSharedMemory>
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
 #include <QNativeIpcKey>
@@ -47,12 +47,13 @@
 // Constructor.
 qpwgraph_application::qpwgraph_application ( int& argc, char **argv )
 	: QApplication(argc, argv), m_widget(nullptr)
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 	, m_memory(nullptr), m_server(nullptr)
 #endif
 	, m_patchbay_activated(-1)
 	, m_patchbay_exclusive(-1)
 	, m_start_minimized(false)
+	, m_remote_name("pipewire-0")
 {
 	QApplication::setApplicationName(PROJECT_NAME);
 	QApplication::setApplicationDisplayName(PROJECT_DESCRIPTION);
@@ -67,7 +68,7 @@ qpwgraph_application::qpwgraph_application ( int& argc, char **argv )
 // Destructor.
 qpwgraph_application::~qpwgraph_application (void)
 {
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 	clearServer();
 #endif
 }
@@ -85,6 +86,8 @@ bool qpwgraph_application::parse_args ( const QStringList& args )
 	const QString s_exclusive    = "exclusive";
 	const QString s_nonexclusive = "non" + s_exclusive;
 	const QString s_minimized    = "minimized";
+	const QString s_remote_name  = "remote";
+	const QString s_help         = "help";
 
 	parser.addOption({{"a", s_activated},
 		QObject::tr("Activated patchbay.")});
@@ -96,7 +99,11 @@ bool qpwgraph_application::parse_args ( const QStringList& args )
 		QObject::tr("Non-exclusive patchbay.")});
 	parser.addOption({{"m", s_minimized},
 		QObject::tr("Start minimized.")});
-	const QCommandLineOption& helpOption = parser.addHelpOption();
+	parser.addOption({{"r", s_remote_name},
+		QObject::tr("Remote daemon name."),
+		QObject::tr("name")});
+	parser.addOption({{"?", s_help},
+		QObject::tr("Displays help on command-line options.")});
 	const QCommandLineOption& versionOption = parser.addVersionOption();
 	parser.addPositionalArgument("patchbay-file",
 		QObject::tr("Patchbay file (.%1)")
@@ -110,7 +117,7 @@ bool qpwgraph_application::parse_args ( const QStringList& args )
 		return false;
 	}
 
-	if (parser.isSet(helpOption)) {
+	if (parser.isSet(s_help)) {
 		out << parser.helpText() << '\n';
 		return false;
 	}
@@ -122,6 +129,11 @@ bool qpwgraph_application::parse_args ( const QStringList& args )
 		out << QString("Qt: %1").arg(qVersion());
 	#if defined(QT_STATIC)
 		out << "-static";
+	#endif
+	#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
+		out << ' ' << '(';
+		out << QApplication::platformName();
+		out << ')';
 	#endif
 		out << '\n';
 		out << QString("PipeWire: %1 (headers: %2)")
@@ -145,6 +157,9 @@ bool qpwgraph_application::parse_args ( const QStringList& args )
 
 	m_start_minimized = parser.isSet(s_minimized);
 
+	if (parser.isSet(s_remote_name))
+		m_remote_name = parser.value(s_remote_name);
+
 	int nargs = 0;
 	m_patchbay_path.clear();
 	foreach (const QString& arg, parser.positionalArguments()) {
@@ -159,7 +174,7 @@ bool qpwgraph_application::parse_args ( const QStringList& args )
 }
 
 
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 
 // Check if another instance is running,
 // and raise its proper main widget...
@@ -174,6 +189,14 @@ bool qpwgraph_application::setupServer (void)
 	if (!uname.isEmpty()) {
 		m_unique += ':';
 		m_unique += uname;
+	}
+	QString uremote = QString::fromUtf8(::getenv("PIPEWIRE_REMOTE"));
+	if (uremote.isEmpty())
+		uremote = m_remote_name;
+	if (!uremote.isEmpty()) {
+		m_unique += ':';
+		m_unique += uremote;
+		m_remote_name = uremote;
 	}
 	m_unique += '@';
 	m_unique += QHostInfo::localHostName();
@@ -286,7 +309,7 @@ void qpwgraph_application::readyReadSlot (void)
 	}
 }
 
-#endif	// CONFIG_SYSTEM_TRAY
+#endif	// CONFIG_XUNIQUE
 
 
 //----------------------------------------------------------------------------
@@ -296,9 +319,7 @@ void qpwgraph_application::readyReadSlot (void)
 int main ( int argc, char *argv[] )
 {
 	Q_INIT_RESOURCE(qpwgraph);
-#if defined(Q_OS_LINUX) && !defined(CONFIG_WAYLAND)
-	::setenv("QT_QPA_PLATFORM", "xcb", 0);
-#endif
+
 	qpwgraph_application app(argc, argv);
 
 	if (!app.parse_args(app.arguments())) {
@@ -306,7 +327,7 @@ int main ( int argc, char *argv[] )
 		return 1;
 	}
 
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 	// Have another instance running?
 	if (!app.setupServer()) {
 		app.quit();

@@ -1,7 +1,7 @@
 // qpwgraph.h
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -72,8 +72,10 @@ public:
 		{ return m_patchbay_exclusive > 0; }
 	bool isStartMinimized() const
 		{ return m_start_minimized; }
+	const QString& remoteName() const
+		{ return m_remote_name; }
 
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 
 	// Check if another instance is running,
 	// and raise its proper main widget...
@@ -96,7 +98,7 @@ private:
 
 	// Instance variables.
 	QWidget       *m_widget;
-#ifdef CONFIG_SYSTEM_TRAY
+#ifdef CONFIG_XUNIQUE
 	QString        m_unique;
 	QSharedMemory *m_memory;
 	QLocalServer  *m_server;
@@ -106,6 +108,7 @@ private:
 	int     m_patchbay_activated;
 	int     m_patchbay_exclusive;
 	bool    m_start_minimized;
+	QString m_remote_name;
 };
 
 

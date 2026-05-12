@@ -1,7 +1,7 @@
 // qpwgraph_main.cpp
 //
 /****************************************************************************
-   Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+   Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License
@@ -49,6 +49,7 @@
 
 #include <QHBoxLayout>
 #include <QToolButton>
+#include <QLabel>
 #include <QSlider>
 #include <QSpinBox>
 #include <QComboBox>
@@ -155,6 +156,19 @@ qpwgraph_main::qpwgraph_main (
 	m_ui.graphToolbar->insertAction(before, undo_action);
 	m_ui.graphToolbar->insertAction(before, redo_action);
 	m_ui.graphToolbar->insertSeparator(before);
+
+	// Status-bar labels...
+	m_remote_label = new QLabel();
+	m_remote_label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+	m_remote_label->setFixedHeight(22);
+	m_remote_label->setMinimumWidth(66);
+	m_ui.StatusBar->addPermanentWidget(m_remote_label);
+
+	m_status_label = new QLabel();
+	m_status_label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+	m_status_label->setFixedHeight(22);
+	m_status_label->setMinimumWidth(33);
+	m_ui.StatusBar->addPermanentWidget(m_status_label);
 
 	// Special zoom composite widget...
 	QWidget *zoom_widget = new QWidget();
@@ -322,12 +336,12 @@ qpwgraph_main::qpwgraph_main (
 		SIGNAL(triggered(bool)),
 		m_ui.graphCanvas, SLOT(selectInvert()));
 
-	QObject::connect(m_ui.editRenameItemAction,
-		SIGNAL(triggered(bool)),
-		m_ui.graphCanvas, SLOT(renameItem()));
 	QObject::connect(m_ui.editSearchItemAction,
 		SIGNAL(triggered(bool)),
 		m_ui.graphCanvas, SLOT(searchItem()));
+	QObject::connect(m_ui.editRenameItemAction,
+		SIGNAL(triggered(bool)),
+		m_ui.graphCanvas, SLOT(renameItem()));
 
 	QObject::connect(m_ui.viewMenubarAction,
 		SIGNAL(triggered(bool)),
@@ -409,6 +423,10 @@ qpwgraph_main::qpwgraph_main (
 	QObject::connect(m_ui.viewHidePulseVolumeAction,
 		SIGNAL(triggered(bool)),
 		SLOT(viewHidePulseVolume(bool)));
+
+	QObject::connect(m_ui.viewArrangeNodesAction,
+		SIGNAL(triggered(bool)),
+		m_ui.graphCanvas, SLOT(arrangeNodes()));
 
 	m_ui.viewColorsPipewireAudioAction->setData(qpwgraph_pipewire::audioPortType());
 	m_ui.viewColorsPipewireMidiAction->setData(qpwgraph_pipewire::midiPortType());
@@ -499,6 +517,11 @@ qpwgraph_main::qpwgraph_main (
 	m_ui.graphCanvas->setSearchPlaceholderText(
 		m_ui.editSearchItemAction->statusTip() + QString(3, '.'));
 
+	qpwgraph_pipewire::resetPortTypeColors(m_ui.graphCanvas);
+#ifdef CONFIG_ALSA_MIDI
+	qpwgraph_alsamidi::resetPortTypeColors(m_ui.graphCanvas);
+#endif
+
 	restoreState();
 
 	m_patchbay_untitled = 0;
@@ -558,6 +581,14 @@ qpwgraph_config *qpwgraph_main::config (void) const
 // Take care of command line options and arguments...
 void qpwgraph_main::apply_args ( qpwgraph_application *app )
 {
+	if (m_pipewire) {
+		const QString& remote_name = app->remoteName();
+		if (remote_name != m_pipewire->remoteName()) {
+			m_pipewire->setRemoteName(remote_name);
+			m_pipewire->reset();
+		}
+	}
+
 	if (app->isPatchbayActivatedSet())
 		m_ui.patchbayActivatedAction->setChecked(app->isPatchbayActivated());
 	if (app->isPatchbayExclusiveSet())
@@ -840,7 +871,7 @@ void qpwgraph_main::patchbayManage (void)
 }
 
 
-// Main menu slots.
+// View menu slots.
 void qpwgraph_main::viewMenubar ( bool on )
 {
 	m_ui.MenuBar->setVisible(on);
@@ -946,10 +977,7 @@ void qpwgraph_main::viewTextBesideIcons ( bool on )
 
 void qpwgraph_main::viewCenter (void)
 {
-	const QRectF& scene_rect
-		= m_ui.graphCanvas->scene()->itemsBoundingRect();
-	m_ui.graphCanvas->centerOn(scene_rect.center());
-
+	m_ui.graphCanvas->centerView(false);
 	stabilize();
 }
 
@@ -1005,12 +1033,9 @@ void qpwgraph_main::viewColorsAction (void)
 void qpwgraph_main::viewColorsReset (void)
 {
 	m_ui.graphCanvas->clearPortTypeColors();
-
-	if (m_pipewire)
-		m_pipewire->resetPortTypeColors();
+	qpwgraph_pipewire::resetPortTypeColors(m_ui.graphCanvas);
 #ifdef CONFIG_ALSA_MIDI
-	if (m_alsamidi)
-		m_alsamidi->resetPortTypeColors();
+	qpwgraph_alsamidi::resetPortTypeColors(m_ui.graphCanvas);
 #endif
 	m_ui.graphCanvas->updatePortTypeColors();
 
@@ -1067,6 +1092,7 @@ void qpwgraph_main::viewHidePulseVolume ( bool on )
 }
 
 
+// Help menu slots.
 void qpwgraph_main::helpAbout (void)
 {
 	static const QString title     = PROJECT_NAME;
@@ -1099,6 +1125,12 @@ void qpwgraph_main::helpAbout (void)
 	text += tr("Using: Qt %1").arg(qVersion());
 #if defined(QT_STATIC)
 	text += "-static";
+#endif
+#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
+	text += ' ';
+	text += '(';
+	text += QApplication::platformName();
+	text += ')';
 #endif
 	text += ", ";
 	text +=	tr("PipeWire %1 (headers: %2)")
@@ -1405,6 +1437,9 @@ void qpwgraph_main::stabilize (void)
 	if (m_systray) m_systray->setToolTip(title);
 #endif
 
+	m_ui.graphConnectAction->setEnabled(canvas->canConnect());
+	m_ui.graphDisconnectAction->setEnabled(canvas->canDisconnect());
+
 	m_ui.patchbayExclusiveAction->setEnabled(is_activated);
 	m_ui.patchbaySaveAction->setEnabled(is_dirty);
 
@@ -1413,15 +1448,14 @@ void qpwgraph_main::stabilize (void)
 
 	m_ui.patchbayManageAction->setEnabled(!canvas->isPatchbayEmpty());
 
-	m_ui.graphConnectAction->setEnabled(canvas->canConnect());
-	m_ui.graphDisconnectAction->setEnabled(canvas->canDisconnect());
-
 	m_ui.editSelectNoneAction->setEnabled(
 		!canvas->scene()->selectedItems().isEmpty());
-	m_ui.editRenameItemAction->setEnabled(
-		canvas->canRenameItem());
 	m_ui.editSearchItemAction->setEnabled(
 		canvas->canSearchItem());
+	m_ui.editRenameItemAction->setEnabled(
+		canvas->canRenameItem());
+
+	m_ui.viewArrangeNodesAction->setEnabled(canvas->canArrangeNodes());
 
 #if 0
 	const QRectF& outter_rect
@@ -1453,6 +1487,16 @@ void qpwgraph_main::stabilize (void)
 #ifdef CONFIG_ALSA_MIDI
 	m_ui.viewColorsAlsaMidiAction->setEnabled(m_alsamidi != nullptr);
 #endif
+
+	if (m_pipewire)
+		m_remote_label->setText(m_pipewire->remoteName());
+	else
+		m_remote_label->clear();
+
+	if (is_dirty)
+		m_status_label->setText(tr("MOD"));
+	else
+		m_status_label->clear();
 }
 
 
@@ -1992,6 +2036,13 @@ void qpwgraph_main::closeQuit (void)
 // Session management handler (eg. logoff)
 void qpwgraph_main::commitData ( QSessionManager& sm )
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
+	QStringList args;
+	args << QApplication::applicationName();
+	args << "-platform" << QApplication::platformName();
+	args << "-session" << sm.sessionId();
+	sm.setRestartCommand(args);
+#endif
 	sm.release();
 
 	m_config->setSessionStartMinimized(!isVisible() && !isMinimized());

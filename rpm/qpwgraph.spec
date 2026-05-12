@@ -1,7 +1,7 @@
 #
 # spec file for package qpwgraph
 #
-# Copyright (C) 2021-2025, rncbc aka Rui Nuno Capela. All rights reserved.
+# Copyright (C) 2021-2026, rncbc aka Rui Nuno Capela. All rights reserved.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -17,19 +17,15 @@
 
 Summary:	A PipeWire Graph Qt GUI Interface
 Name:		qpwgraph
-Version:	0.9.4
-Release:	53.1
+Version:	1.0.1
+Release:	2.1
 License:	GPL-2.0-or-later
 Group:		Productivity/Multimedia/Sound/Midi
 Source:		%{name}-%{version}.tar.gz
 URL:		https://gitlab.freedesktop.org/rncbc/qpwgraph
 #Packager:	rncbc.org
 
-%if 0%{?fedora_version} >= 34 || 0%{?suse_version} > 1500 || ( 0%{?sle_version} == 150200 && 0%{?is_opensuse} )
-%define qt_major_version  6
-%else
-%define qt_major_version  5
-%endif
+%global debug_package %{nil}
 
 BuildRequires:	coreutils
 BuildRequires:	pkgconfig
@@ -47,12 +43,11 @@ BuildRequires:	gcc-c++ >= 10
 %define _GCC	/usr/bin/gcc
 %define _GXX	/usr/bin/g++
 %endif
-%if 0%{qt_major_version} == 6
 %if 0%{?sle_version} == 150200 && 0%{?is_opensuse}
-BuildRequires:	qtbase6.9-static >= 6.9
-BuildRequires:	qttools6.9-static
-BuildRequires:	qttranslations6.9-static
-BuildRequires:	qtsvg6.9-static
+BuildRequires:	qtbase6.11-static >= 6.11
+BuildRequires:	qttools6.11-static
+BuildRequires:	qtsvg6.11-static
+BuildRequires:	qttranslations6.11-static
 %else
 BuildRequires:	cmake(Qt6LinguistTools)
 BuildRequires:	pkgconfig(Qt6Core)
@@ -61,15 +56,6 @@ BuildRequires:	pkgconfig(Qt6Widgets)
 BuildRequires:	pkgconfig(Qt6Svg)
 BuildRequires:	pkgconfig(Qt6Xml)
 BuildRequires:	pkgconfig(Qt6Network)
-%endif
-%else
-BuildRequires:	cmake(Qt5LinguistTools)
-BuildRequires:	pkgconfig(Qt5Core)
-BuildRequires:	pkgconfig(Qt5Gui)
-BuildRequires:	pkgconfig(Qt5Widgets)
-BuildRequires:	pkgconfig(Qt5Svg)
-BuildRequires:	pkgconfig(Qt5Xml)
-BuildRequires:	pkgconfig(Qt5Network)
 %endif
 BuildRequires:	pkgconfig(alsa)
 BuildRequires:	pkgconfig(libpipewire-0.3)
@@ -85,7 +71,7 @@ same of QjackCtl (https://qjackctl.sourceforge.io).
 
 %build
 %if 0%{?sle_version} == 150200 && 0%{?is_opensuse}
-source /opt/qt6.9-static/bin/qt6.9-static-env.sh
+source /opt/qt6.11-static/bin/qt6.11-static-env.sh
 %endif
 CXX=%{_GXX} CC=%{_GCC} \
 cmake -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCONFIG_ALSA_MIDI=ON -Wno-dev -B build
@@ -122,13 +108,7 @@ cmake --install build
 
 
 %changelog
-* Sat Jun 21 2025 Rui Nuno Capela <rncbc@rncbc.org> 0.9.4
-- An early-summer'25 beta release.
-* Mon Jun  2 2025 Rui Nuno Capela <rncbc@rncbc.org> 0.9.3
-- An end-of-spring'25 beta release.
-* Sat May 17 2025 Rui Nuno Capela <rncbc@rncbc.org> 0.9.2
-- A mid-spring'25 hot-fix beta release.
-* Thu May 15 2025 Rui Nuno Capela <rncbc@rncbc.org> 0.9.1
-- A mid-spring'25 beta release.
-* Fri Apr 25 2025 Rui Nuno Capela <rncbc@rncbc.org> 0.9.0
-- A spring'25 beta release.
+* Tue Apr 21 2026 Rui Nuno Capela <rncbc@rncbc.org> 1.0.1
+- A spring'26 release.
+* Tue Mar 17 2026 Rui Nuno Capela <rncbc@rncbc.org> 1.0.0
+- An early-spring'26 release.

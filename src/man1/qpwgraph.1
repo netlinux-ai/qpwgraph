@@ -1,4 +1,4 @@
-.TH QPWGRAPH "1" "March 15, 2022"
+.TH qpwgraph "1" "April 16, 2026"
 .SH NAME
 qpwgraph \- A PipeWire Graph Qt GUI Interface
 .SH SYNOPSIS
@@ -7,7 +7,7 @@ qpwgraph \- A PipeWire Graph Qt GUI Interface
 .SH DESCRIPTION
 This manual page documents briefly the
 .B qpwgraph
-command.
+command-line options.
 .PP
 \fBqpwgraph\fP is a graph manager dedicated to PipeWire (https://pipewire.org),
 using the Qt C++ framework (https://qt.io), based and pretty much like the same of
@@ -20,21 +20,33 @@ Source code repository: https://gitlab.freedesktop.org/rncbc/qpwgraph
 .IP
 Activated patchbay.
 .HP
+\fB\-d\fR, \fB\-\-deactivated\fR
+.IP
+Deactivated patchbay.
+.HP
 \fB\-x\fR, \fB\-\-exclusive\fR
 .IP
 Exclusive patchbay.
+.HP
+\fB\-n\fR, \fB\-\-nonexclusive\fR
+.IP
+Non-exclusive patchbay.
 .HP
 \fB\-m\fR, \fB\-\-minimized\fR
 .IP
 Start minimized.
 .HP
-\fB\-h\fR, \fB\-\-help\fR
+\fB\-r\fR, \fB\-\-remote\fR <\fIname\fR>
 .IP
-Show help about command line options
+Remote daemon name.
+.HP
+\fB\-?\fR, \fB\-\-help\fR
+.IP
+Displays help on command-line options.
 .HP
 \fB\-v\fR, \fB\-\-version\fR
 .IP
-Show version information
+Show version information.
 .SH FILES
 Configuration settings are stored in ~/.config/rncbc.org/qpwgraph.conf
 .SH AUTHOR

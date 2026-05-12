@@ -20,6 +20,7 @@ set (HEADERS
   qpwgraph_connect.h
   qpwgraph_port.h
   qpwgraph_node.h
+  qpwgraph_toposort.h
   qpwgraph_item.h
   qpwgraph_sect.h
   qpwgraph_pipewire.h
@@ -41,6 +42,7 @@ set (SOURCES
   qpwgraph_connect.cpp
   qpwgraph_port.cpp
   qpwgraph_node.cpp
+  qpwgraph_toposort.cpp
   qpwgraph_item.cpp
   qpwgraph_sect.cpp
   qpwgraph_pipewire.cpp
@@ -123,7 +125,6 @@ install (FILES mimetypes/org.rncbc.${PROJECT_NAME}.application-x-${PROJECT_NAME}
   DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/32x32/mimetypes)
 install (FILES mimetypes/org.rncbc.${PROJECT_NAME}.application-x-${PROJECT_NAME}-patchbay.svg
   DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/mimetypes)
-
-install (FILES man1/qpwgraph.1
+install (FILES man1/${PROJECT_NAME}.1
   DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
