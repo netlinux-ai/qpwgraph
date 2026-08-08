@@ -1,0 +1,622 @@
+<title>Zoning the Patchbay — a layout rework for qpwgraph</title>
+<style>
+  @font-face {
+    font-family: "ui-mono-stack";
+    src: local("JetBrains Mono"), local("Berkeley Mono"), local("Cascadia Mono");
+  }
+  :root {
+    --bg: #f6f7f5;
+    --fg: #1a231e;
+    --muted: #5c6a61;
+    --card: #ffffff;
+    --card2: #edf1ee;
+    --border: #d8ddd7;
+    --accent: #0f7a6c;
+    --accent-soft: #dcf1ea;
+    --zone-in: #2f7d4f;
+    --zone-in-soft: #e2f2e6;
+    --zone-out: #3457a6;
+    --zone-out-soft: #e5eaf7;
+    --zone-unused: #6b7570;
+    --warn: #a5620b;
+    --warn-soft: #f8ecd8;
+    --bad: #b5402d;
+    --bad-soft: #f9e4e0;
+    --port-audio: #2b8a3e;
+    --port-midi: #a5502c;
+    --port-video: #6a4fc0;
+    --port-other: #9c7a15;
+    --code-bg: #eef1ee;
+    --font-display: "ui-mono-stack", ui-monospace, "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --font-body: system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121613;
+      --fg: #e6ece7;
+      --muted: #93a49a;
+      --card: #1b211d;
+      --card2: #212821;
+      --border: #333c33;
+      --accent: #46d2b5;
+      --accent-soft: #123a30;
+      --zone-in: #63c98a;
+      --zone-in-soft: #163821;
+      --zone-out: #8ca3ea;
+      --zone-out-soft: #1c2746;
+      --zone-unused: #93a49a;
+      --warn: #f0ad6e;
+      --warn-soft: #3a2a13;
+      --bad: #ef8a7c;
+      --bad-soft: #3c1c17;
+      --port-audio: #55d17e;
+      --port-midi: #e29464;
+      --port-video: #ab97ec;
+      --port-other: #ddc258;
+      --code-bg: #171d18;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121613;
+    --fg: #e6ece7;
+    --muted: #93a49a;
+    --card: #1b211d;
+    --card2: #212821;
+    --border: #333c33;
+    --accent: #46d2b5;
+    --accent-soft: #123a30;
+    --zone-in: #63c98a;
+    --zone-in-soft: #163821;
+    --zone-out: #8ca3ea;
+    --zone-out-soft: #1c2746;
+    --zone-unused: #93a49a;
+    --warn: #f0ad6e;
+    --warn-soft: #3a2a13;
+    --bad: #ef8a7c;
+    --bad-soft: #3c1c17;
+    --port-audio: #55d17e;
+    --port-midi: #e29464;
+    --port-video: #ab97ec;
+    --port-other: #ddc258;
+    --code-bg: #171d18;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.65 var(--font-body); }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 2.6rem 1.4rem 5rem; }
+  header.doc { border-bottom: 3px solid var(--accent); padding-bottom: 1.2rem; margin-bottom: 2rem; }
+  header.doc .eyebrow { font-family: var(--font-display); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: .5rem; }
+  header.doc h1 { font-family: var(--font-display); font-size: 1.7rem; line-height: 1.3; margin: 0 0 .5rem; text-wrap: balance; letter-spacing: -.01em; }
+  header.doc .sub { color: var(--muted); font-size: .95rem; }
+  h2 { font-family: var(--font-display); font-size: 1.2rem; text-transform: uppercase; letter-spacing: .03em; margin: 3.2rem 0 1rem; padding-top: 1.1rem; border-top: 1px solid var(--border); text-wrap: balance; }
+  h2 .no { color: var(--accent); font-weight: 700; margin-right: .55rem; }
+  h3 { font-family: var(--font-display); font-size: 1rem; margin: 1.8rem 0 .6rem; letter-spacing: .01em; }
+  p { margin: .6rem 0 1rem; max-width: 68ch; }
+  a { color: var(--accent); }
+  code { font-family: var(--font-display); font-size: .84em; background: var(--code-bg); padding: .12em .4em; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.15rem; overflow-x: auto; font-family: var(--font-display); font-size: .83rem; line-height: 1.6; }
+  pre code { background: none; padding: 0; }
+  figure { margin: 1.8rem 0 2.2rem; }
+  .diagram { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; overflow-x: auto; }
+  .diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+  figcaption { color: var(--muted); font-size: .87rem; margin-top: .65rem; padding: 0 .2rem; max-width: 74ch; }
+  .callout { border-left: 4px solid var(--accent); background: var(--card); border-radius: 0 8px 8px 0; padding: .85rem 1.15rem; margin: 1.3rem 0; }
+  .callout .tag { font-family: var(--font-display); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); display: block; margin-bottom: .3rem; }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout p { margin: .3rem 0; max-width: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin: 1.3rem 0; }
+  .card { border: 1px solid var(--border); border-top: 4px solid var(--accent); border-radius: 10px; background: var(--card); padding: 1rem 1.1rem; }
+  .card h4 { font-family: var(--font-display); margin: 0 0 .5rem; font-size: .92rem; text-transform: uppercase; letter-spacing: .02em; }
+  .card p { font-size: .9rem; margin: .35rem 0; max-width: none; }
+  .card.zin { border-top-color: var(--zone-in); }
+  .card.zmid { border-top-color: var(--accent); }
+  .card.zout { border-top-color: var(--zone-out); }
+  .card.zunused { border-top-color: var(--zone-unused); }
+  ul, ol { padding-left: 1.3rem; }
+  li { margin: .35rem 0; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.4rem; }
+  .toc ol { margin: .4rem 0; columns: 2; column-gap: 2rem; font-size: .93rem; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0 1.4rem; font-size: .9rem; }
+  th, td { border: 1px solid var(--border); padding: .55rem .7rem; text-align: left; vertical-align: top; }
+  th { background: var(--card2); font-family: var(--font-display); font-size: .8rem; text-transform: uppercase; letter-spacing: .02em; }
+  .legend { display: flex; flex-wrap: wrap; gap: .9rem 1.6rem; font-size: .84rem; color: var(--muted); margin: .6rem 0 1.6rem; font-family: var(--font-display); }
+  .legend .sw { display: inline-block; width: .7em; height: .7em; border-radius: 50%; margin-right: .4em; vertical-align: -.05em; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .85rem; }
+  svg text { font-family: var(--font-body); fill: currentColor; }
+  svg .mono { font-family: var(--font-display); }
+  svg .lbl { font-size: 12px; }
+  svg .small { font-size: 10.5px; }
+  svg .muted { fill: var(--muted); }
+</style>
+
+<div class="wrap">
+
+<header class="doc">
+  <div class="eyebrow">qpwgraph &middot; UI rework proposal</div>
+  <h1>Zoning the Patchbay<br>a layout rework for qpwgraph</h1>
+  <div class="sub">Prepared for Graham / NetLinux &middot; 8&nbsp;August&nbsp;2026 &middot; scoped against the local <code>netlinux-ai/qpwgraph</code> checkout at <code>020875b</code>, on top of the three patches already carried in <code>patches/</code>.</div>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#problem">The problem with a free canvas</a></li>
+    <li><a href="#model">Four zones, not one canvas</a></li>
+    <li><a href="#classify">How a node picks its zone</a></li>
+    <li><a href="#drag">Moving a tile between zones</a></li>
+    <li><a href="#stack">Stacking without overlap</a></li>
+    <li><a href="#group">Collapsing long stacks</a></li>
+    <li><a href="#impl">What this means for the codebase</a></li>
+    <li><a href="#phases">Phased plan</a></li>
+    <li><a href="#risks">Open questions</a></li>
+  </ol>
+</nav>
+
+<h2 id="problem"><span class="no">1</span>The problem with a free canvas</h2>
+
+<p>qpwgraph's canvas is a plain <code>QGraphicsScene</code>: every node is a freestanding item you drop wherever, and it stays exactly there until you drag it again. There is no notion of "this belongs on the left" — the layout you end up with is just the accumulated history of everywhere you've ever dropped something. New nodes appear at a default spawn point and pile up; tiles overlap; cables cross wherever the geometry happens to put them.</p>
+
+<p>The one thing already fighting this is a local patch (<code>0003-Add-auto-arrange-nodes-button-to-toolbar.patch</code>): a toolbar button that sorts every visible node into three columns by <code>nodeMode()</code> — sources left, duplex/none centre, sinks right — and restacks each column top-down. It's a one-shot snapshot, not a standing layout: run it once, then drag things back into a pile. The idea below turns that one-shot sort into the permanent shape of the window, plus a fourth column for whatever isn't part of the working setup right now.</p>
+
+<figure>
+  <div class="diagram">
+    <svg viewBox="0 0 1180 660" role="img" aria-label="Comparison of the current freeform canvas, where twelve nodes are scattered with overlapping tiles and crossing cables, against the proposed four-zone layout, where the same nodes sort into Inputs, Middle, and Outputs columns plus a bottom Unused shelf, stacked without overlap.">
+      <text x="290" y="30" class="lbl mono" text-anchor="middle" fill="var(--muted)">NOW — everything on one freeform canvas</text>
+      <text x="890" y="30" class="lbl mono" text-anchor="middle" fill="var(--accent)">PROPOSED — four managed zones</text>
+
+      <!-- BEFORE panel -->
+      <rect x="20" y="46" width="540" height="566" rx="6" fill="none" stroke="var(--border)" stroke-width="1.4" stroke-dasharray="5 4"/>
+
+      <!-- before tiles -->
+      <g font-size="11">
+        <!-- Mic -->
+        <rect x="50" y="90" width="110" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="160" cy="104" r="3.4" fill="var(--port-audio)"/>
+        <text x="105" y="108" text-anchor="middle">Mic</text>
+        <!-- Scarlett Capture -->
+        <rect x="190" y="70" width="130" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="320" cy="84" r="3.4" fill="var(--port-audio)"/>
+        <text x="255" y="88" text-anchor="middle">Scarlett Capture</text>
+        <!-- Spotify -->
+        <rect x="100" y="150" width="110" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="210" cy="164" r="3.4" fill="var(--port-audio)"/>
+        <text x="155" y="168" text-anchor="middle">Spotify</text>
+        <!-- Firefox -->
+        <rect x="280" y="190" width="100" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="380" cy="204" r="3.4" fill="var(--port-audio)"/>
+        <text x="330" y="208" text-anchor="middle">Firefox</text>
+        <!-- EasyEffects Sink -->
+        <rect x="60" y="230" width="130" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="60" cy="244" r="3.4" fill="var(--port-audio)"/>
+        <circle cx="190" cy="244" r="3.4" fill="var(--port-audio)"/>
+        <text x="125" y="248" text-anchor="middle">EasyEffects (Sink)</text>
+        <!-- EasyEffects Source, overlapping the tile above -->
+        <rect x="160" y="255" width="140" height="28" rx="4" fill="var(--card)" stroke="var(--bad)" stroke-width="1.6"/>
+        <circle cx="160" cy="269" r="3.4" fill="var(--port-audio)"/>
+        <circle cx="300" cy="269" r="3.4" fill="var(--port-audio)"/>
+        <text x="230" y="273" text-anchor="middle">EasyEffects (Source)</text>
+        <circle cx="195" cy="248" r="8" fill="var(--bad)"/>
+        <text x="195" y="252" text-anchor="middle" fill="var(--card)" font-weight="700" font-size="11">!</text>
+        <!-- Loopback -->
+        <rect x="340" y="300" width="100" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="340" cy="314" r="3.4" fill="var(--port-audio)"/>
+        <circle cx="440" cy="314" r="3.4" fill="var(--port-audio)"/>
+        <text x="390" y="318" text-anchor="middle">Loopback</text>
+        <!-- Built-in Speakers -->
+        <rect x="400" y="110" width="130" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="400" cy="124" r="3.4" fill="var(--port-audio)"/>
+        <text x="465" y="128" text-anchor="middle">Built-in Speakers</text>
+        <!-- HDMI Audio -->
+        <rect x="430" y="380" width="110" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="430" cy="394" r="3.4" fill="var(--port-audio)"/>
+        <text x="485" y="398" text-anchor="middle">HDMI Audio</text>
+        <!-- Scarlett Playback -->
+        <rect x="250" y="420" width="130" height="28" rx="4" fill="var(--card)" stroke="var(--border)"/>
+        <circle cx="250" cy="434" r="3.4" fill="var(--port-audio)"/>
+        <text x="315" y="438" text-anchor="middle">Scarlett Playback</text>
+        <!-- USB MIDI Bridge -->
+        <rect x="70" y="480" width="140" height="28" rx="4" fill="var(--card2)" stroke="var(--border)" stroke-dasharray="3 3"/>
+        <circle cx="70" cy="494" r="3.4" fill="var(--port-midi)"/>
+        <text x="140" y="498" text-anchor="middle" fill="var(--muted)">USB MIDI Bridge</text>
+        <!-- Webcam -->
+        <rect x="320" y="520" width="110" height="28" rx="4" fill="var(--card2)" stroke="var(--border)" stroke-dasharray="3 3"/>
+        <circle cx="320" cy="534" r="3.4" fill="var(--port-video)"/>
+        <text x="375" y="538" text-anchor="middle" fill="var(--muted)">Webcam (video)</text>
+      </g>
+
+      <!-- before cables: crossing bezier lines -->
+      <g fill="none" stroke="var(--muted)" stroke-width="1.4" opacity="0.85">
+        <path d="M160,104 C 260,110 30,230 60,244"/>
+        <path d="M320,84 C 420,140 60,220 160,269"/>
+        <path d="M210,164 C 320,220 380,260 340,314"/>
+        <path d="M190,244 C 320,200 340,150 400,124"/>
+        <path d="M300,269 C 400,320 480,360 430,394"/>
+        <path d="M440,314 C 380,380 320,410 250,434"/>
+      </g>
+      <text x="40" y="600" class="small" fill="var(--muted)" font-style="italic">positions are wherever they were last dragged</text>
+
+      <!-- AFTER panel -->
+      <rect x="620" y="46" width="540" height="566" rx="6" fill="none" stroke="var(--border)" stroke-width="1.4"/>
+      <!-- column dividers -->
+      <line x1="770" y1="46" x2="770" y2="456" stroke="var(--border)" stroke-width="1.4"/>
+      <line x1="1010" y1="46" x2="1010" y2="456" stroke="var(--border)" stroke-width="1.4"/>
+      <line x1="620" y1="466" x2="1160" y2="466" stroke="var(--border)" stroke-width="1.4"/>
+      <!-- splitter grips -->
+      <g stroke="var(--muted)" stroke-width="1.6">
+        <line x1="764" y1="246" x2="776" y2="246"/>
+        <line x1="764" y1="253" x2="776" y2="253"/>
+        <line x1="764" y1="260" x2="776" y2="260"/>
+        <line x1="1004" y1="246" x2="1016" y2="246"/>
+        <line x1="1004" y1="253" x2="1016" y2="253"/>
+        <line x1="1004" y1="260" x2="1016" y2="260"/>
+      </g>
+
+      <!-- zone headers -->
+      <text x="695" y="66" text-anchor="middle" class="mono lbl" fill="var(--zone-in)">INPUTS</text>
+      <text x="890" y="66" text-anchor="middle" class="mono lbl" fill="var(--accent)">MIDDLE</text>
+      <text x="1085" y="66" text-anchor="middle" class="mono lbl" fill="var(--zone-out)">OUTPUTS</text>
+      <rect x="635" y="72" width="120" height="3" fill="var(--zone-in)"/>
+      <rect x="830" y="72" width="120" height="3" fill="var(--accent)"/>
+      <rect x="1025" y="72" width="120" height="3" fill="var(--zone-out)"/>
+
+      <!-- Inputs column tiles -->
+      <g font-size="11">
+        <rect x="635" y="95" width="120" height="30" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+        <circle cx="755" cy="110" r="3.4" fill="var(--port-audio)"/>
+        <text x="695" y="114" text-anchor="middle">Mic</text>
+        <rect x="635" y="137" width="120" height="30" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+        <circle cx="755" cy="152" r="3.4" fill="var(--port-audio)"/>
+        <text x="695" y="156" text-anchor="middle">Scarlett Capture</text>
+        <rect x="635" y="179" width="120" height="30" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+        <circle cx="755" cy="194" r="3.4" fill="var(--port-audio)"/>
+        <text x="695" y="198" text-anchor="middle">Spotify</text>
+        <rect x="635" y="221" width="120" height="30" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+        <circle cx="755" cy="236" r="3.4" fill="var(--port-audio)"/>
+        <text x="695" y="240" text-anchor="middle">Firefox</text>
+
+        <!-- Middle column tiles -->
+        <rect x="785" y="95" width="210" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <circle cx="785" cy="110" r="3.4" fill="var(--port-audio)"/>
+        <circle cx="995" cy="110" r="3.4" fill="var(--port-audio)"/>
+        <text x="890" y="114" text-anchor="middle">EasyEffects (Sink)</text>
+        <rect x="785" y="137" width="210" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <circle cx="785" cy="152" r="3.4" fill="var(--port-audio)"/>
+        <circle cx="995" cy="152" r="3.4" fill="var(--port-audio)"/>
+        <text x="890" y="156" text-anchor="middle">EasyEffects (Source)</text>
+        <rect x="785" y="179" width="210" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <circle cx="785" cy="194" r="3.4" fill="var(--port-audio)"/>
+        <circle cx="995" cy="194" r="3.4" fill="var(--port-audio)"/>
+        <text x="890" y="198" text-anchor="middle">Loopback</text>
+
+        <!-- Outputs column tiles -->
+        <rect x="1025" y="95" width="120" height="30" rx="4" fill="var(--zone-out-soft)" stroke="var(--zone-out)"/>
+        <circle cx="1025" cy="110" r="3.4" fill="var(--port-audio)"/>
+        <text x="1085" y="114" text-anchor="middle">Built-in Speakers</text>
+        <rect x="1025" y="137" width="120" height="30" rx="4" fill="var(--zone-out-soft)" stroke="var(--zone-out)"/>
+        <circle cx="1025" cy="152" r="3.4" fill="var(--port-audio)"/>
+        <text x="1085" y="156" text-anchor="middle">HDMI Audio</text>
+        <rect x="1025" y="179" width="120" height="30" rx="4" fill="var(--zone-out-soft)" stroke="var(--zone-out)"/>
+        <circle cx="1025" cy="194" r="3.4" fill="var(--port-audio)"/>
+        <text x="1085" y="198" text-anchor="middle">Scarlett Playback</text>
+      </g>
+
+      <!-- after cables: clean lanes through the gutters -->
+      <g fill="none" stroke="var(--accent)" stroke-width="1.8">
+        <path d="M755,110 C 770,110 770,110 785,110"/>
+        <path d="M995,110 C 1010,110 1010,110 1025,110"/>
+        <path d="M755,152 C 768,170 772,190 785,194"/>
+        <path d="M995,194 C 1008,194 1012,194 1025,194"/>
+      </g>
+
+      <!-- Unused zone -->
+      <text x="890" y="486" text-anchor="middle" class="mono lbl" fill="var(--zone-unused)">UNUSED</text>
+      <rect x="640" y="500" width="180" height="32" rx="4" fill="var(--card2)" stroke="var(--zone-unused)" stroke-dasharray="4 3"/>
+      <circle cx="640" cy="516" r="3.4" fill="var(--port-midi)"/>
+      <text x="730" y="520" text-anchor="middle" font-size="11" fill="var(--muted)">USB MIDI Bridge</text>
+      <rect x="850" y="500" width="180" height="32" rx="4" fill="var(--card2)" stroke="var(--zone-unused)" stroke-dasharray="4 3"/>
+      <circle cx="850" cy="516" r="3.4" fill="var(--port-video)"/>
+      <text x="940" y="520" text-anchor="middle" font-size="11" fill="var(--muted)">Webcam (video)</text>
+      <text x="890" y="556" text-anchor="middle" class="small" fill="var(--muted)" font-style="italic">parked here until dragged into a zone</text>
+    </svg>
+  </div>
+  <figcaption><strong>Figure 1.</strong> Same twelve nodes, two layouts. Left: today's canvas — tiles sit wherever they were last dropped, two overlap outright, and cables cross with no relationship to the graph's structure. Right: the same nodes sorted into Inputs / Middle / Outputs columns and a bottom Unused shelf, stacked top-down with a fixed gap; cables run through the clear gutters between columns instead of over other tiles.</figcaption>
+</figure>
+
+<h2 id="model"><span class="no">2</span>Four zones, not one canvas</h2>
+
+<p>Three vertical zones span most of the window, plus one horizontal zone along the bottom:</p>
+
+<div class="cards">
+  <div class="card zin"><h4>Inputs — left</h4><p>Anything feeding audio (or MIDI, or video) into the graph: microphones, line-in, capture devices, and playback applications like a browser or media player, since from the graph's point of view they're a source too.</p></div>
+  <div class="card zmid"><h4>Middle — centre</h4><p>Everything that both takes input and produces output: EasyEffects' sink and source nodes, loopbacks, Carla, a virtual mixer. This is the working area — routing and DSP live here.</p></div>
+  <div class="card zout"><h4>Outputs — right</h4><p>Where audio ultimately lands: hardware playback devices, HDMI audio, a recorder or streaming app's input.</p></div>
+  <div class="card zunused"><h4>Unused — bottom</h4><p>A shelf for whatever isn't part of the current working setup: a disconnected interface, a MIDI controller, a webcam. Out of the way, but one drag from being back in play.</p></div>
+</div>
+
+<div class="callout warn">
+  <span class="tag">Terminology trap</span>
+  <p>qpwgraph's own <code>qpwgraph_item::Mode</code> enum (<code>qpwgraph_item.h</code>) names a node by which ports it exposes, not by what a user calls the device: <code>Output</code> means "has only outgoing ports" — a microphone, a media player — and <code>Input</code> means "has only incoming ports" — a speaker. That's the exact inverse of the zone names proposed here. The existing <code>autoArrangeNodes()</code> already made this call correctly (<code>nodeMode() == Output</code> → left column), so the mapping isn't new, but it's worth a code comment where it happens, because it reads backwards on a first pass.</p>
+</div>
+
+<div class="legend">
+  <span><span class="sw" style="background:var(--port-audio)"></span>audio port</span>
+  <span><span class="sw" style="background:var(--port-midi)"></span>MIDI port</span>
+  <span><span class="sw" style="background:var(--port-video)"></span>video port</span>
+  <span><span class="sw" style="background:var(--port-other)"></span>other port</span>
+  <span style="font-family:var(--font-body)">— qpwgraph's own default port-type colours (<code>qpwgraph_pipewire::resetPortTypeColors()</code>), reused here rather than invented.</span>
+</div>
+
+<h2 id="classify"><span class="no">3</span>How a node picks its zone</h2>
+
+<p>A default falls out of what <code>qpwgraph_pipewire</code> already knows about a node the moment it appears — no new PipeWire-side data needed. A manual drag always overrides the default, and that override sticks.</p>
+
+<figure>
+  <div class="diagram">
+    <svg viewBox="0 0 900 320" role="img" aria-label="Decision flow: a node with only output ports defaults to the Inputs zone, only input ports defaults to Outputs, a live connection with mixed ports defaults to Middle, otherwise it defaults to Unused. A manual override, persisted per node name, always wins over this default.">
+      <defs>
+        <marker id="arrow1" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g font-size="12">
+        <rect x="330" y="14" width="220" height="34" rx="5" fill="var(--card)" stroke="var(--border)"/>
+        <text x="440" y="36" text-anchor="middle">node appears</text>
+
+        <line x1="440" y1="48" x2="440" y2="70" stroke="currentColor" marker-end="url(#arrow1)"/>
+        <rect x="330" y="70" width="220" height="34" rx="5" fill="var(--card)" stroke="var(--border)"/>
+        <text x="440" y="92" text-anchor="middle">output ports only?</text>
+        <line x1="550" y1="87" x2="620" y2="87" stroke="var(--zone-in)" marker-end="url(#arrow1)"/>
+        <text x="580" y="80" text-anchor="middle" class="small" fill="var(--zone-in)">yes</text>
+        <rect x="620" y="70" width="180" height="34" rx="5" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+        <text x="710" y="92" text-anchor="middle" fill="var(--zone-in)">Inputs zone</text>
+
+        <line x1="440" y1="104" x2="440" y2="126" stroke="currentColor" marker-end="url(#arrow1)"/>
+        <text x="452" y="119" class="small muted">no</text>
+        <rect x="330" y="126" width="220" height="34" rx="5" fill="var(--card)" stroke="var(--border)"/>
+        <text x="440" y="148" text-anchor="middle">input ports only?</text>
+        <line x1="550" y1="143" x2="620" y2="143" stroke="var(--zone-out)" marker-end="url(#arrow1)"/>
+        <text x="580" y="136" text-anchor="middle" class="small" fill="var(--zone-out)">yes</text>
+        <rect x="620" y="126" width="180" height="34" rx="5" fill="var(--zone-out-soft)" stroke="var(--zone-out)"/>
+        <text x="710" y="148" text-anchor="middle" fill="var(--zone-out)">Outputs zone</text>
+
+        <line x1="440" y1="160" x2="440" y2="182" stroke="currentColor" marker-end="url(#arrow1)"/>
+        <text x="452" y="175" class="small muted">no</text>
+        <rect x="330" y="182" width="220" height="34" rx="5" fill="var(--card)" stroke="var(--border)"/>
+        <text x="440" y="204" text-anchor="middle">has a live connection?</text>
+        <line x1="550" y1="199" x2="620" y2="199" stroke="var(--accent)" marker-end="url(#arrow1)"/>
+        <text x="580" y="192" text-anchor="middle" class="small" fill="var(--accent)">yes</text>
+        <rect x="620" y="182" width="180" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="710" y="204" text-anchor="middle" fill="var(--accent)">Middle zone</text>
+
+        <line x1="440" y1="216" x2="440" y2="238" stroke="currentColor" marker-end="url(#arrow1)"/>
+        <text x="452" y="231" class="small muted">no</text>
+        <rect x="330" y="238" width="220" height="34" rx="5" fill="var(--card2)" stroke="var(--zone-unused)"/>
+        <text x="440" y="260" text-anchor="middle" fill="var(--zone-unused)">Unused zone</text>
+      </g>
+
+      <g font-size="11.5">
+        <rect x="40" y="150" width="200" height="52" rx="5" fill="var(--card)" stroke="var(--muted)" stroke-dasharray="3 3"/>
+        <text x="140" y="170" text-anchor="middle" font-weight="600">manual override</text>
+        <text x="140" y="186" text-anchor="middle" class="small muted">drag = pin, keyed by node name</text>
+        <path d="M240,176 C 270,176 270,150 300,150" fill="none" stroke="var(--muted)" stroke-dasharray="3 3" marker-end="url(#arrow1)"/>
+        <line x1="300" y1="60" x2="300" y2="255" stroke="var(--muted)" stroke-dasharray="2 3"/>
+        <line x1="296" y1="60" x2="304" y2="60" stroke="var(--muted)"/>
+        <line x1="296" y1="255" x2="304" y2="255" stroke="var(--muted)"/>
+        <text x="255" y="60" text-anchor="end" class="small muted">always wins over</text>
+        <text x="255" y="255" text-anchor="end" class="small muted">any of these four</text>
+      </g>
+    </svg>
+  </div>
+  <figcaption><strong>Figure 2.</strong> The default classification chain walks <code>nodeMode()</code> first, falling back to whether the node currently has any active link. A manually dragged placement is stored per node name and short-circuits the whole chain on every future launch — the default only matters until you've told it otherwise. This chain runs on whatever a node resolves to <em>after</em> the grouping and folding pass in §6 — a collapsed group is classified once, by its anchor node, not once per member.</figcaption>
+</figure>
+
+<h2 id="drag"><span class="no">4</span>Moving a tile between zones</h2>
+
+<p>Dragging a tile out of one zone and into another is the entire "select what you're using" workflow the request asks for — plug in an interface, it lands in Unused because nothing's connected yet, drag it up into Inputs the moment you start using it.</p>
+
+<figure>
+  <div class="diagram">
+    <svg viewBox="0 0 900 300" role="img" aria-label="A tile being dragged from the Unused shelf up into the Inputs column: the Unused shelf closes the gap it leaves behind, and the Inputs column opens a gap and grows to receive it.">
+      <defs>
+        <marker id="arrow2" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="var(--accent)"/>
+        </marker>
+      </defs>
+      <!-- Unused panel -->
+      <rect x="40" y="180" width="300" height="100" rx="6" fill="none" stroke="var(--zone-unused)" stroke-dasharray="4 3"/>
+      <text x="50" y="172" class="mono lbl" fill="var(--zone-unused)">UNUSED</text>
+      <rect x="65" y="205" width="160" height="30" rx="4" fill="var(--card2)" stroke="var(--zone-unused)" stroke-width="1.6" stroke-dasharray="4 3"/>
+      <text x="145" y="224" text-anchor="middle" font-size="11" fill="var(--muted)">Guitar Interface</text>
+      <circle cx="60" cy="200" r="10" fill="var(--card)" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="60" y="204" text-anchor="middle" font-size="10.5" fill="var(--accent)" font-weight="700">1</text>
+      <path d="M225,246 L 300,255" stroke="var(--zone-unused)" stroke-width="1.4"/>
+      <path d="M300,255 l -8,-4 M300,255 l -3,-8" stroke="var(--zone-unused)" stroke-width="1.4"/>
+      <circle cx="300" cy="262" r="10" fill="var(--card)" stroke="var(--zone-unused)" stroke-width="1.6"/>
+      <text x="300" y="266" text-anchor="middle" font-size="10.5" fill="var(--zone-unused)" font-weight="700">2</text>
+      <text x="200" y="272" text-anchor="middle" class="small muted">shelf closes the gap</text>
+
+      <!-- motion path -->
+      <path d="M150,205 C 260,80 480,60 640,150" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="6 4" marker-end="url(#arrow2)"/>
+
+      <!-- Inputs panel -->
+      <rect x="560" y="20" width="180" height="260" rx="6" fill="none" stroke="var(--zone-in)"/>
+      <text x="570" y="14" class="mono lbl" fill="var(--zone-in)">INPUTS</text>
+      <rect x="580" y="40" width="140" height="28" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+      <text x="650" y="58" text-anchor="middle" font-size="11">Mic</text>
+      <rect x="580" y="80" width="140" height="28" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+      <text x="650" y="98" text-anchor="middle" font-size="11">Scarlett Capture</text>
+      <rect x="580" y="120" width="140" height="28" rx="4" fill="var(--zone-in-soft)" stroke="var(--zone-in)"/>
+      <text x="650" y="138" text-anchor="middle" font-size="11">Spotify</text>
+      <rect x="580" y="160" width="140" height="30" rx="4" fill="none" stroke="var(--accent)" stroke-dasharray="4 3"/>
+      <text x="650" y="179" text-anchor="middle" font-size="11" fill="var(--accent)">drop here</text>
+      <circle cx="740" cy="155" r="10" fill="var(--card)" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="740" y="159" text-anchor="middle" font-size="10.5" fill="var(--accent)" font-weight="700">3</text>
+      <text x="650" y="210" text-anchor="middle" class="small" fill="var(--accent)">column grows to fit</text>
+    </svg>
+  </div>
+  <figcaption><strong>Figure 3.</strong> The tile leaves the Unused shelf (1), which reflows to close the gap (2); the Inputs column opens a slot at the drop point and stacks the tile in (3). No coordinates are typed anywhere — the zone a tile is in and its position within that zone's stack are the only state that changes.</figcaption>
+</figure>
+
+<h2 id="stack"><span class="no">5</span>Stacking without overlap</h2>
+
+<p>Within a zone, tiles behave like a vertical shelf-packer, not free-floating items: fixed horizontal position, stacked top-to-bottom with a constant gap, ordered by whatever the last drag or alphabetical default left them in. Inserting a tile anywhere but the bottom pushes everything below it down by exactly its height plus one gap — nothing ever needs to overlap, because there's no free coordinate to overlap into.</p>
+
+<figure>
+  <div class="diagram">
+    <svg viewBox="0 0 760 260" role="img" aria-label="A column of three stacked tiles, and the same column after a new tile is inserted second from top: the tiles that were below it shift down by exactly the new tile's height plus the gap.">
+      <defs>
+        <marker id="arrow3" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="currentColor"/>
+        </marker>
+      </defs>
+      <text x="180" y="26" text-anchor="middle" class="mono lbl muted">BEFORE</text>
+      <rect x="100" y="40" width="160" height="26" rx="4" fill="var(--card)" stroke="var(--border)"/>
+      <text x="180" y="57" text-anchor="middle" font-size="11">A</text>
+      <rect x="100" y="80" width="160" height="50" rx="4" fill="var(--card)" stroke="var(--border)"/>
+      <text x="180" y="109" text-anchor="middle" font-size="11">B (tall)</text>
+      <rect x="100" y="144" width="160" height="26" rx="4" fill="var(--card)" stroke="var(--border)"/>
+      <text x="180" y="161" text-anchor="middle" font-size="11">C</text>
+
+      <path d="M300,90 C 340,90 340,90 380,90" fill="none" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#arrow3)"/>
+      <text x="340" y="76" text-anchor="middle" class="small" fill="var(--accent)">insert D</text>
+
+      <text x="540" y="26" text-anchor="middle" class="mono lbl muted">AFTER</text>
+      <rect x="460" y="40" width="160" height="26" rx="4" fill="var(--card)" stroke="var(--border)"/>
+      <text x="540" y="57" text-anchor="middle" font-size="11">A</text>
+      <rect x="460" y="80" width="160" height="26" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="540" y="97" text-anchor="middle" font-size="11" fill="var(--accent)">D (new)</text>
+      <rect x="460" y="120" width="160" height="50" rx="4" fill="var(--card)" stroke="var(--border)"/>
+      <text x="540" y="149" text-anchor="middle" font-size="11">B (tall)</text>
+      <line x1="440" y1="105" x2="440" y2="135" stroke="var(--muted)" marker-end="url(#arrow3)"/>
+      <rect x="460" y="184" width="160" height="26" rx="4" fill="var(--card)" stroke="var(--border)"/>
+      <text x="540" y="201" text-anchor="middle" font-size="11">C</text>
+      <line x1="440" y1="164" x2="440" y2="194" stroke="var(--muted)" marker-end="url(#arrow3)"/>
+      <text x="415" y="180" text-anchor="end" class="small muted">shift by D's</text>
+      <text x="415" y="192" text-anchor="end" class="small muted">height + gap</text>
+    </svg>
+  </div>
+  <figcaption><strong>Figure 4.</strong> Inserting D after A pushes B and C down by a fixed amount; nothing is repositioned by hand and nothing is left to collide. The same rule runs in reverse on removal.</figcaption>
+</figure>
+
+<h2 id="group"><span class="no">6</span>Collapsing long stacks</h2>
+
+<p>Figure 4 stops a stack from overlapping, but it doesn't stop a stack from getting long — and one real-world case makes it long fast. Turning on EasyEffects for a single device doesn't add one node to the Middle column, it adds one node per plugin in the chain, because EasyEffects builds its filter graph out of individually-addressable PipeWire nodes and tags them with a shared <code>node.group</code> property (<code>PW_KEY_NODE_GROUP</code>, set to <code>ee_sink_group</code> / <code>ee_source_group</code> in EasyEffects' own <code>pw_node_manager.cpp</code>) precisely so other tools can tell they're one unit. qpwgraph doesn't read that property today — its node-info callback (<code>qpwgraph_pipewire.cpp</code>, around the <code>PW_KEY_NODE_DESCRIPTION</code>/<code>PW_KEY_NODE_NICK</code> lookups) only pulls name, nick, description and id — so all of it lands as separate tiles.</p>
+
+<p>A second, unrelated case produces the same clutter for a different reason: some nodes exist purely to expose a control, not to carry a signal anywhere. <code>pwvucontrol-peak-detect</code> — spawned by pwvucontrol itself whenever a level meter is open — is a real example already living on this machine; GNOME's volume-key handler (<code>gsd-media-keys</code>) and its on-screen-display helper (<code>org.gnome.VolumeControl</code>) are two more. None of them has a meaningful position in a signal-flow diagram, and tellingly, EasyEffects already hard-codes this exact set of names into a blocklist (<code>blocklist_node_name</code>, <code>pw_node_manager.hpp</code>) rather than let its own graph view show them.</p>
+
+<p>Two separate mechanisms follow from that, and they resolve before Figure 2's zone classification ever runs:</p>
+
+<div class="cards">
+  <div class="card zmid"><h4>Group into one tile</h4><p>Nodes sharing a <code>node.group</code> collapse into a single tile the size of any other, labelled with the group's anchor node (the sink or source, not a plugin) and a small "+N" disclosure. Expanding it reveals the members inline, pushing the rest of the stack down exactly as Figure 4 already does for a plain insert — collapsing is just that in reverse. Where <code>node.group</code> is absent (not every app sets it), a name-prefix fallback catches the common case, but is a heuristic, not a guarantee — see §9.</p></div>
+  <div class="card zunused"><h4>Fold or hide control-only nodes</h4><p>A node matched against a small blocklist — starting from EasyEffects' own list plus <code>media.role=event</code> — never gets a tile of its own. Best case, it's attached as a small icon (a peak-meter glyph, a mute badge) to the tile of the node it actually controls; failing an obvious pairing, it's simply not drawn. Either way it never occupies a slot in Unused, which is for things you might use, not for plumbing nothing points at.</p></div>
+</div>
+
+<figure>
+  <div class="diagram">
+    <svg viewBox="0 0 1100 300" role="img" aria-label="Before: six separate tiles for one EasyEffects chain, including a stray pwvucontrol peak-detect helper node. After: the sink and its plugins collapse into one tile marked plus two, the source and its plugin collapse into one tile marked plus one, and the peak-detect node disappears from the stack entirely, reappearing as a small meter icon on the Built-in Speakers tile it actually measures.">
+      <text x="225" y="24" text-anchor="middle" class="mono lbl muted">BEFORE — six tiles, one effects chain</text>
+      <text x="830" y="24" text-anchor="middle" class="mono lbl" fill="var(--accent)">AFTER — two group tiles</text>
+
+      <g font-size="10.5">
+        <rect x="50" y="40" width="340" height="28" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="220" y="58" text-anchor="middle" font-size="11">EasyEffects (Sink)</text>
+        <rect x="50" y="76" width="340" height="28" rx="4" fill="var(--card2)" stroke="var(--border)"/>
+        <text x="220" y="94" text-anchor="middle" fill="var(--muted)">Sink &middot; Limiter</text>
+        <rect x="50" y="112" width="340" height="28" rx="4" fill="var(--card2)" stroke="var(--border)"/>
+        <text x="220" y="130" text-anchor="middle" fill="var(--muted)">Sink &middot; Equalizer</text>
+
+        <rect x="50" y="156" width="340" height="28" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="220" y="174" text-anchor="middle" font-size="11">EasyEffects (Source)</text>
+        <rect x="50" y="192" width="340" height="28" rx="4" fill="var(--card2)" stroke="var(--border)"/>
+        <text x="220" y="210" text-anchor="middle" fill="var(--muted)">Source &middot; Noise Suppression</text>
+
+        <rect x="50" y="228" width="340" height="28" rx="4" fill="var(--card2)" stroke="var(--zone-unused)" stroke-dasharray="4 3"/>
+        <text x="220" y="246" text-anchor="middle" fill="var(--muted)">pwvucontrol-peak-detect</text>
+      </g>
+
+      <!-- group brackets -->
+      <line x1="402" y1="40" x2="402" y2="140" stroke="var(--muted)" stroke-dasharray="2 3"/>
+      <line x1="398" y1="40" x2="406" y2="40" stroke="var(--muted)"/>
+      <line x1="398" y1="140" x2="406" y2="140" stroke="var(--muted)"/>
+      <text x="416" y="90" text-anchor="middle" class="small muted" transform="rotate(-90 416 90)">same node.group</text>
+
+      <line x1="402" y1="156" x2="402" y2="220" stroke="var(--muted)" stroke-dasharray="2 3"/>
+      <line x1="398" y1="156" x2="406" y2="156" stroke="var(--muted)"/>
+      <line x1="398" y1="220" x2="406" y2="220" stroke="var(--muted)"/>
+      <text x="416" y="188" text-anchor="middle" class="small muted" transform="rotate(-90 416 188)">same node.group</text>
+
+      <!-- group tiles after -->
+      <g font-size="11">
+        <rect x="590" y="50" width="300" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <polygon points="606,60 606,74 616,67" fill="var(--accent)"/>
+        <text x="640" y="71" fill="var(--accent)">EasyEffects (Sink)</text>
+        <rect x="838" y="58" width="34" height="18" rx="9" fill="var(--card)" stroke="var(--accent)"/>
+        <text x="855" y="71" text-anchor="middle" fill="var(--accent)" font-size="10.5">+2</text>
+
+        <rect x="590" y="104" width="300" height="34" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+        <polygon points="606,114 606,128 616,121" fill="var(--accent)"/>
+        <text x="640" y="125" fill="var(--accent)">EasyEffects (Source)</text>
+        <rect x="838" y="112" width="34" height="18" rx="9" fill="var(--card)" stroke="var(--accent)"/>
+        <text x="855" y="125" text-anchor="middle" fill="var(--accent)" font-size="10.5">+1</text>
+      </g>
+
+      <text x="590" y="168" class="small muted" font-style="italic">control-only node folds onto its target —</text>
+      <text x="590" y="181" class="small muted" font-style="italic">no tile of its own</text>
+      <rect x="590" y="192" width="220" height="30" rx="4" fill="var(--zone-out-soft)" stroke="var(--zone-out)"/>
+      <text x="700" y="211" text-anchor="middle" font-size="11">Built-in Speakers</text>
+      <rect x="792" y="200" width="5" height="8" fill="var(--accent)"/>
+      <rect x="800" y="196" width="5" height="12" fill="var(--accent)"/>
+      <rect x="808" y="203" width="5" height="5" fill="var(--accent)"/>
+
+      <path d="M390,242 C 500,260 700,270 795,204" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrow5)"/>
+      <defs>
+        <marker id="arrow5" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="var(--accent)"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <figcaption><strong>Figure 5.</strong> Left: six flat tiles for one device's effects chain, the last of which is a control-only helper with nothing to route. Right: the sink's group and the source's group each collapse to one tile with a disclosure badge; the peak-detect node is gone from the stack altogether, reappearing as a small meter glyph on the Built-in Speakers tile it was actually measuring.</figcaption>
+</figure>
+
+<h2 id="impl"><span class="no">7</span>What this means for the codebase</h2>
+
+<p>The node and port classes already carry everything a zone assignment needs — <code>qpwgraph_item::Mode</code> and the four port-type accessors on <code>qpwgraph_pipewire</code> (<code>audioPortType()</code>, <code>midiPortType()</code>, <code>videoPortType()</code>, <code>otherPortType()</code>) are exactly the classify() inputs in Figure&nbsp;2. What doesn't exist yet is a managed layout to place them in — <code>qpwgraph_canvas</code> is a bare <code>QGraphicsScene</code>/<code>QGraphicsView</code>, and <code>autoArrangeNodes()</code> (the existing patch) works by computing absolute <code>x,y</code> once and calling <code>node->setPos()</code>. That's a snapshot, not a constraint — nothing stops the next drag from breaking it again.</p>
+
+<p>The zoned model wants that to be a standing constraint instead of a one-shot layout pass. Qt already has the mechanism: <code>qpwgraph_node</code> is a <code>QGraphicsPathItem</code>; wrapping each zone's contents in a <code>QGraphicsWidget</code> managed by a <code>QGraphicsLinearLayout</code> (vertical) turns "stack without overlap" into something the layout engine does for free on every add, remove, or resize — no manual <code>y</code> bookkeeping at all. Four such widgets — three side by side for Inputs/Middle/Outputs, one full-width beneath for Unused — replace today's single unconstrained scene. Reassigning a node's zone becomes <code>layoutA-&gt;removeItem(node); layoutB-&gt;addItem(node);</code> plus updating the persisted zone key; the layout reflows both sides automatically. <code>QGraphicsSplitter</code>-style drag handles between the three columns give the resizable dividers in Figure&nbsp;1 without extra plumbing. A collapsed group (§6) is just one more widget in that same layout — its member nodes live in a child layout inside it that only participates in the parent's size when expanded.</p>
+
+<p>Grouping and folding both need one thing qpwgraph doesn't currently fetch at all: the node-info callback in <code>qpwgraph_pipewire.cpp</code> reads <code>PW_KEY_NODE_DESCRIPTION</code>, <code>PW_KEY_NODE_NICK</code>, <code>PW_KEY_NODE_NAME</code> and <code>PW_KEY_NODE_ID</code>, and nothing else — <code>PW_KEY_NODE_GROUP</code>, <code>PW_KEY_MEDIA_ROLE</code> and <code>PW_KEY_APP_ID</code> aren't looked up anywhere in the tree. That's new plumbing before it's a UI change: pull those three properties through alongside the existing ones, store them on <code>qpwgraph_node</code>, and the group-by/fold-by logic in §6 has something to match against.</p>
+
+<div class="callout">
+  <span class="tag">Persistence — a gap worth knowing about now</span>
+  <p>Node position currently isn't durably stored anywhere: the <code>.qpwgraph</code> patchbay file (<code>qpwgraph_patchbay.cpp</code>) only records connection rules by node/port name, and <code>GraphLayoutGroup</code> in <code>qpwgraph_config.cpp</code> is the main window's dock/toolbar state, not canvas coordinates. Today, layout is session-only — which is arguably half of why it feels unmanaged. Zone + order-within-zone should go into a small new sidecar keyed by node name (a <code>layout.json</code> next to the patchbay file, not an overload of the connection-rules schema), so it survives restarts even though PipeWire hands out fresh numeric node ids every time. Group-expanded/collapsed state and any manual fold override belong in the same file, keyed the same way.</p>
+</div>
+
+<h2 id="phases"><span class="no">8</span>Phased plan</h2>
+
+<table>
+  <tr><th>Phase</th><th>Deliverable</th><th>Depends on</th></tr>
+  <tr><td>0</td><td>Static 4-zone <code>QGraphicsWidget</code>/<code>QGraphicsLinearLayout</code> skeleton, nodes classified by Figure&nbsp;2's default rule only — no drag-to-reassign, no persistence yet. Enough to see whether the shape feels right before investing further.</td><td>nothing new</td></tr>
+  <tr><td>1</td><td>Drag a tile from one zone's layout into another's; both reflow live (Figure&nbsp;3).</td><td>Phase 0</td></tr>
+  <tr><td>2</td><td><code>layout.json</code> sidecar: persist zone + order per node name, load it ahead of the Figure&nbsp;2 default on every launch.</td><td>Phase 1</td></tr>
+  <tr><td>3</td><td>Draggable splitters between the three top columns (column widths persist too).</td><td>Phase 0</td></tr>
+  <tr><td>4</td><td>Pull <code>node.group</code>/<code>media.role</code>/<code>app.id</code> through in <code>qpwgraph_pipewire.cpp</code>; collapse same-group nodes into one disclosure tile; fold or hide the blocklisted control-only set (Figure&nbsp;5).</td><td>Phase 0</td></tr>
+</table>
+
+<h2 id="risks"><span class="no">9</span>Open questions</h2>
+
+<ul>
+  <li><strong>Mixed-type nodes.</strong> A node that exposes both audio and MIDI ports (some virtual instruments do) doesn't have a clean single zone under the Figure&nbsp;2 rule as written — probably fine to classify by port count majority and let a manual drag settle it, but worth deciding before Phase&nbsp;0 rather than during.</li>
+  <li><strong>Very long stacks.</strong> A zone with more tiles than fit on screen needs its own scrollbar once <code>QGraphicsLinearLayout</code> is doing the stacking — should be close to free with <code>QGraphicsWidget</code>, but not yet verified.</li>
+  <li><strong>Cable rendering across zone boundaries.</strong> Figure&nbsp;1's clean gutter routing assumes cables only ever run Inputs→Middle→Outputs left-to-right. A cable from Unused into an active zone (before the tile itself is dragged there) is a real case — e.g. quickly patching a still-parked device — and needs a routing rule of its own.</li>
+  <li><strong>Grouping without <code>node.group</code>.</strong> Not every app tags its helper nodes the way EasyEffects does — Carla's internal plugin nodes, for instance, may need a name-prefix or app.id-based fallback instead. A fallback heuristic will occasionally group (or fail to group) the wrong things; it needs to be easy to override per node, the same way a manual zone drag already is.</li>
+  <li><strong>Folding needs a target to fold onto.</strong> The peak-detect example works because its name says what device it's metering closely enough to guess. A control-only node with no such hint has nothing obvious to attach itself to — those should probably just be hidden outright rather than guessed at.</li>
+</ul>
+
+<footer>
+  Companion to <code>linux-audio.html</code> (the wider NetLinux audio-stack strategy) and the local patches in <code>/Data/qpwgraph/patches/</code>. This is a proposal for discussion, not a spec — nothing here has been built yet.
+</footer>
+
+</div>
