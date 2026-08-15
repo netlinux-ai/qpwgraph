@@ -27,6 +27,8 @@
 #include <QHash>
 #include <QIcon>
 
+#include <QGraphicsLayoutItem>
+
 
 // Forward decls.
 class QStyleOptionGraphicsItem;
@@ -34,8 +36,12 @@ class QStyleOptionGraphicsItem;
 
 //----------------------------------------------------------------------------
 // qpwgraph_node -- Node graphics item.
+//
+// Also a QGraphicsLayoutItem, so a node can live inside a QGraphicsLinearLayout
+// (see qpwgraph_zone) and have its position owned by that layout instead of
+// freely `setPos()`-able. See qpwgraph_zones-proposal.html for why.
 
-class qpwgraph_node : public qpwgraph_item
+class qpwgraph_node : public qpwgraph_item, public QGraphicsLayoutItem
 {
 public:
 
@@ -103,6 +109,16 @@ public:
 
 	// Path/shape updater.
 	void updatePath();
+
+	// QGraphicsLayoutItem interface -- natural (unstretched) tile size,
+	// so a QGraphicsLinearLayout hosting this node sizes it to its content.
+	QSizeF sizeHint(Qt::SizeHint which, const QSizeF& constraint = QSizeF()) const override;
+
+	// QGraphicsLayoutItem's default setGeometry() only records the
+	// geometry -- it does *not* reposition the associated graphics item
+	// on its own (that assumption is the one thing worth documenting
+	// here: it's an easy trap). Override it to actually move the node.
+	void setGeometry(const QRectF& rect) override;
 
 	// Node hash key (by id).
 	class NodeIdKey : public IdKey

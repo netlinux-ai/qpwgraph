@@ -31,6 +31,9 @@
 
 // Forward decls.
 class QGraphicsScene;
+class QGraphicsWidget;
+
+class qpwgraph_zone;
 
 class QRubberBand;
 class QUndoStack;
@@ -184,6 +187,18 @@ public:
 	// Auto-arrange nodes into columns by mode.
 	void autoArrangeNodes();
 
+	// Zoned layout (experimental) -- see qpwgraph-zones-proposal.html.
+	enum Zone { ZoneInputs = 0, ZoneMiddle, ZoneOutputs, ZoneUnused };
+
+	// Default zone classifier for a node (Figure 2 of the proposal):
+	// output-only nodes are sources (Inputs), input-only nodes are
+	// sinks (Outputs), duplex/none nodes with a live connection are
+	// routing (Middle), everything else is parked (Unused).
+	Zone nodeZone(qpwgraph_node *node) const;
+
+	void setZonedLayout(bool on);
+	bool isZonedLayout() const;
+
 	// Clear all selection.
 	void clearSelection();
 
@@ -336,6 +351,14 @@ protected:
 
 private:
 
+	// Zoned layout internals.
+	void ensureZoneWidgets();
+	void applyZonedLayout();
+	void updateZoneRootGeometry();
+	void activateZoneLayout();
+	qpwgraph_zone *zoneAt(const QPointF& scene_pos) const;
+	qpwgraph_zone *zoneOf(qpwgraph_node *node) const;
+
 	// Mouse pointer dragging states.
 	enum DragState { DragNone = 0, DragStart, DragMove, DragScroll };
 
@@ -395,6 +418,19 @@ private:
 
 	// Hide PulseAudio volume/infrastructure nodes.
 	bool        m_hide_pulse_volume;
+
+	// Zoned layout (experimental) -- see qpwgraph-zones-proposal.html.
+	bool m_zoned_layout;
+
+	QGraphicsWidget *m_zone_root;	// outer vertical: top row + unused shelf
+	QGraphicsWidget *m_zone_top;	// horizontal: inputs/middle/outputs
+	qpwgraph_zone   *m_zone[4];		// indexed by Zone
+
+	// Nodes currently mid-drag while zoned (removed from their zone's
+	// layout so they can move freely under the cursor) -- remembers
+	// where each one came from, so a drop outside every zone can fall
+	// back to putting it back where it was.
+	QHash<qpwgraph_node *, qpwgraph_zone *> m_zone_drag;
 };
 
 

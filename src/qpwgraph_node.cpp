@@ -41,10 +41,16 @@
 // Constructor.
 qpwgraph_node::qpwgraph_node (
 	uint id, const QString& name, qpwgraph_item::Mode mode, uint type )
-	: qpwgraph_item(nullptr),
+	: qpwgraph_item(nullptr), QGraphicsLayoutItem(),
 		m_id(id), m_name(name), m_mode(mode), m_type(type),
 		m_num(0), m_name_ex(false)
 {
+	// Associate this item with itself as a QGraphicsLayoutItem, so a
+	// QGraphicsLinearLayout can host it directly and own its geometry
+	// (via QGraphicsLayoutItem::setGeometry()'s default implementation,
+	// which positions the associated graphics item at the layout slot).
+	QGraphicsLayoutItem::setGraphicsItem(this);
+
 	QGraphicsPathItem::setZValue(0.0);
 
 	const QPalette pal;
@@ -409,6 +415,28 @@ void qpwgraph_node::updatePath (void)
 	QPainterPath path;
 	path.addRoundedRect(0, 0, width, height + 6, 5, 5);
 	/*QGraphicsPathItem::*/setPath(path);
+
+	// Content size may have changed (title/port list) -- let any hosting
+	// QGraphicsLinearLayout know it should re-query sizeHint().
+	QGraphicsLayoutItem::updateGeometry();
+}
+
+
+// QGraphicsLayoutItem interface.
+QSizeF qpwgraph_node::sizeHint (
+	Qt::SizeHint /*which*/, const QSizeF& /*constraint*/ ) const
+{
+	return itemRect().size();
+}
+
+
+void qpwgraph_node::setGeometry ( const QRectF& rect )
+{
+	// The base implementation only stores the geometry (so geometry()/
+	// count()-based queries elsewhere, e.g. qpwgraph_zone's drop-index
+	// math, stay correct) -- it does not touch the item itself.
+	QGraphicsLayoutItem::setGeometry(rect);
+	QGraphicsPathItem::setPos(rect.topLeft());
 }
 
 

@@ -23,8 +23,11 @@
 
 #include "qpwgraph_connect.h"
 #include "qpwgraph_patchbay.h"
+#include "qpwgraph_zone.h"
 
 #include <QGraphicsScene>
+#include <QGraphicsWidget>
+#include <QGraphicsLinearLayout>
 #include <QRegularExpression>
 #include <QTransform>
 
@@ -35,6 +38,7 @@
 #include <QGraphicsProxyWidget>
 #include <QLineEdit>
 #include <QScrollBar>
+#include <QFont>
 
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -75,9 +79,13 @@ qpwgraph_canvas::qpwgraph_canvas ( QWidget *parent )
 		m_selected_nodes(0), m_repel_overlapping_nodes(false),
 		m_rename_item(nullptr), m_rename_editor(nullptr), m_renamed(0),
 		m_search_editor(nullptr), m_filter_enabled(false),
-		m_merger_enabled(false), m_hide_pulse_volume(false)
+		m_merger_enabled(false), m_hide_pulse_volume(false),
+		m_zoned_layout(false), m_zone_root(nullptr), m_zone_top(nullptr)
 {
 	m_scene = new QGraphicsScene();
+
+	for (int i = 0; i < 4; ++i)
+		m_zone[i] = nullptr;
 
 	m_commands = new QUndoStack();
 
@@ -318,6 +326,17 @@ void qpwgraph_canvas::addItem ( qpwgraph_item *item )
 				emit updated(node);
 			else
 				emit added(node);
+			// Zoned layout: a brand new node gets placed straight into
+			// its classified zone. This never touches any other node's
+			// zone/position -- only newly-appearing nodes are ever
+			// auto-classified; once a node has a zone (by default or by
+			// a manual drag), it keeps it across unrelated add/remove
+			// activity elsewhere in the graph.
+			if (m_zoned_layout) {
+				ensureZoneWidgets();
+				m_zone[nodeZone(node)]->addNode(node);
+				activateZoneLayout();
+			}
 		}
 	}
 	else
@@ -346,8 +365,16 @@ void qpwgraph_canvas::removeItem ( qpwgraph_item *item )
 			node->removePorts();
 			removeNodeKeys(node);
 		}
-		if (node)
+		if (node) {
+			// Detach from its zone's layout *before* the caller deletes
+			// it -- a QGraphicsLinearLayout has no way to know its item
+			// is about to be destroyed out from under it.
+			qpwgraph_zone *zone = zoneOf(node);
+			if (zone)
+				zone->removeNode(node);
+			m_zone_drag.remove(node);
 			m_nodes.removeAll(node);
+		}
 	}
 	else
 	if (item->type() == qpwgraph_port::Type) {
@@ -766,6 +793,24 @@ void qpwgraph_canvas::mouseMoveEvent ( QMouseEvent *event )
 					}
 					// Original node position (for move command)...
 					m_pos1 = snapPos(m_pos);
+					// Zoned layout: picking a node up detaches it from
+					// its zone's layout right away -- the zone reflows
+					// to close the gap immediately (Figure 3 of the
+					// proposal doc). It's a free top-level item again
+					// until it's dropped on a zone at release.
+					if (m_zoned_layout) {
+						foreach (QGraphicsItem *sel, m_scene->selectedItems()) {
+							if (sel->type() != qpwgraph_node::Type)
+								continue;
+							qpwgraph_node *sel_node = static_cast<qpwgraph_node *> (sel);
+							qpwgraph_zone *sel_zone = zoneOf(sel_node);
+							if (sel_zone) {
+								m_zone_drag.insert(sel_node, sel_zone);
+								sel_zone->removeNode(sel_node);
+							}
+						}
+						activateZoneLayout();
+					}
 				}
 				else m_item = nullptr;
 			}
@@ -831,6 +876,11 @@ void qpwgraph_canvas::mouseMoveEvent ( QMouseEvent *event )
 			}
 		}
 		// Move current selected nodes...
+		// (While zoned, any node actually under the cursor here was
+		// already detached from its zone's layout back in DragStart, so
+		// it's a free top-level item again -- safe to setPos() same as
+		// the freeform case. A node that's still zone-managed is never
+		// in m_scene->selectedItems() as the drag anchor while dragging.)
 		if (m_item && m_item->type() == qpwgraph_node::Type) {
 			pos = snapPos(pos);
 			const QPointF delta = (pos - m_pos);
@@ -960,7 +1010,7 @@ void qpwgraph_canvas::mouseReleaseEvent ( QMouseEvent *event )
 				m_connect = nullptr;
 			}
 		}
-		// Maybe some node(s) were moved...
+		// Maybe some node(s) were moved (or zone-dropped)...
 		if (m_item && m_item->type() == qpwgraph_node::Type) {
 			const QPointF& pos
 				= QGraphicsView::mapToScene(event->pos());
@@ -972,8 +1022,29 @@ void qpwgraph_canvas::mouseReleaseEvent ( QMouseEvent *event )
 						nodes.append(node);
 				}
 			}
-			m_commands->push(
-				new qpwgraph_move_command(this, nodes, m_pos1, m_pos));
+			if (m_zoned_layout) {
+				// Drop the whole selection into whichever zone is under
+				// the cursor; if that's outside all four, fall back to
+				// each node's own zone of origin (there's no valid
+				// "unzoned" state while zoned layout is on). No undo
+				// command here -- same "automatic reflow doesn't go
+				// through the undo stack" rule as everywhere else in
+				// zoned mode.
+				qpwgraph_zone *target = zoneAt(pos);
+				foreach (qpwgraph_node *node, nodes) {
+					qpwgraph_zone *origin = m_zone_drag.value(node, nullptr);
+					qpwgraph_zone *dest = target ? target : origin;
+					if (dest) {
+						const QPointF& local = dest->mapFromScene(pos);
+						dest->addNode(node, dest->indexForDropPoint(local));
+					}
+					m_zone_drag.remove(node);
+				}
+				activateZoneLayout();
+			} else {
+				m_commands->push(
+					new qpwgraph_move_command(this, nodes, m_pos1, m_pos));
+			}
 			++nchanged;
 		}
 		// Close rubber-band lasso...
@@ -1730,6 +1801,10 @@ void qpwgraph_canvas::clearPortTypeColors (void)
 // Auto-arrange nodes into columns by mode.
 void qpwgraph_canvas::autoArrangeNodes (void)
 {
+	// Freeform-canvas convenience; zoned layout already owns placement.
+	if (m_zoned_layout)
+		return;
+
 	const qreal hgap = 50.0;
 	const qreal vgap = 20.0;
 
@@ -1803,6 +1878,196 @@ void qpwgraph_canvas::autoArrangeNodes (void)
 
 	m_commands->push(move_command);
 	emitChanged();
+}
+
+
+// Zoned layout -- see qpwgraph-zones-proposal.html.
+//
+// Real QGraphicsWidget/QGraphicsLinearLayout containers (qpwgraph_zone),
+// not computed setPos() coordinates: stacking-without-overlap and zone
+// membership are enforced by Qt's layout engine, the same way Tk's pack
+// geometry manager owns its children's placement.
+//
+// Default zone classifier for a node (Figure 2 of the proposal).
+qpwgraph_canvas::Zone qpwgraph_canvas::nodeZone ( qpwgraph_node *node ) const
+{
+	switch (node->nodeMode()) {
+	case qpwgraph_item::Output:
+		return ZoneInputs;
+	case qpwgraph_item::Input:
+		return ZoneOutputs;
+	default:
+		break;
+	}
+
+	foreach (qpwgraph_port *port, node->ports()) {
+		if (!port->connects().isEmpty())
+			return ZoneMiddle;
+	}
+
+	return ZoneUnused;
+}
+
+
+void qpwgraph_canvas::setZonedLayout ( bool on )
+{
+	m_zoned_layout = on;
+
+	if (m_zoned_layout) {
+		applyZonedLayout();
+	}
+	else if (m_zone_root) {
+		// Release every node back to the freeform canvas, each one
+		// exactly where its zone last put it -- hiding the zone root
+		// instead would take every node down with it, since they are
+		// now real QGraphicsItem children of it.
+		for (int z = 0; z < 4; ++z) {
+			if (!m_zone[z])
+				continue;
+			foreach (qpwgraph_node *node, m_zone[z]->takeAllNodes())
+				node->setParentItem(nullptr);
+		}
+		m_zone_root->setVisible(false);
+		m_zone_drag.clear();
+		emitChanged();
+	}
+}
+
+
+bool qpwgraph_canvas::isZonedLayout (void) const
+{
+	return m_zoned_layout;
+}
+
+
+// Build the zone widget tree once, lazily:
+//
+//   m_zone_root (vertical layout)
+//     m_zone_top (horizontal layout)
+//       m_zone[ZoneInputs]   stretch 0 (hugs content)
+//       m_zone[ZoneMiddle]   stretch 1 (expands to fill, like pack's expand=1)
+//       m_zone[ZoneOutputs]  stretch 0 (hugs content)
+//     m_zone[ZoneUnused]     stretch 0, horizontal inner layout, full width
+//
+void qpwgraph_canvas::ensureZoneWidgets (void)
+{
+	if (m_zone_root) {
+		m_zone_root->setVisible(true);
+		return;
+	}
+
+	m_zone[ZoneInputs]  = new qpwgraph_zone(Qt::Vertical,   tr("INPUTS"),  QColor(60, 150, 100));
+	m_zone[ZoneMiddle]  = new qpwgraph_zone(Qt::Vertical,   tr("MIDDLE"),  QColor(40, 150, 140));
+	m_zone[ZoneOutputs] = new qpwgraph_zone(Qt::Vertical,   tr("OUTPUTS"), QColor(70, 100, 170));
+	m_zone[ZoneUnused]  = new qpwgraph_zone(Qt::Horizontal, tr("UNUSED"),  QColor(130, 130, 130));
+
+	m_zone_top = new QGraphicsWidget();
+	QGraphicsLinearLayout *top_layout = new QGraphicsLinearLayout(Qt::Horizontal);
+	top_layout->setContentsMargins(0.0, 0.0, 0.0, 0.0);
+	top_layout->setSpacing(12.0);
+	m_zone_top->setLayout(top_layout);
+	for (int z = 0; z < 3; ++z) {
+		m_zone[z]->setParentItem(m_zone_top);
+		top_layout->addItem(m_zone[z]);
+	}
+	top_layout->setStretchFactor(m_zone[ZoneInputs],  0);
+	top_layout->setStretchFactor(m_zone[ZoneMiddle],  1);
+	top_layout->setStretchFactor(m_zone[ZoneOutputs], 0);
+
+	m_zone_root = new QGraphicsWidget();
+	QGraphicsLinearLayout *root_layout = new QGraphicsLinearLayout(Qt::Vertical);
+	root_layout->setContentsMargins(0.0, 0.0, 0.0, 0.0);
+	root_layout->setSpacing(12.0);
+	m_zone_root->setLayout(root_layout);
+
+	m_zone_top->setParentItem(m_zone_root);
+	root_layout->addItem(m_zone_top);
+	root_layout->setStretchFactor(m_zone_top, 1);
+
+	m_zone[ZoneUnused]->setParentItem(m_zone_root);
+	root_layout->addItem(m_zone[ZoneUnused]);
+	root_layout->setStretchFactor(m_zone[ZoneUnused], 0);
+
+	m_zone_root->setZValue(-500.0);
+	m_scene->addItem(m_zone_root);
+
+	updateZoneRootGeometry();
+}
+
+
+// Sync the zone tree's geometry to the current viewport, so the three
+// top zones and the shelf fill the visible canvas (Middle claiming any
+// leftover width) instead of shrink-wrapping to their content.
+void qpwgraph_canvas::updateZoneRootGeometry (void)
+{
+	QRectF rect = QGraphicsView::mapToScene(
+		QGraphicsView::viewport()->rect()).boundingRect();
+	rect.adjust(20.0, 20.0, -20.0, -20.0);
+
+	m_zone_root->setPos(rect.topLeft());
+	m_zone_root->resize(rect.size());
+}
+
+
+// Force the whole zone tree to recompute geometry right now, rather
+// than leaving it to Qt's deferred LayoutRequest event. Structural
+// changes (addNode/removeNode anywhere in the tree) need this so a
+// node's new position is correct on the very next paint, not "whenever
+// the event loop gets around to it".
+void qpwgraph_canvas::activateZoneLayout (void)
+{
+	if (m_zone_root && m_zone_root->layout())
+		m_zone_root->layout()->activate();
+}
+
+
+// Classify and place only nodes that aren't in a zone yet -- a node
+// that's already placed (by default classification or by a manual
+// drag-to-reassign) keeps its zone and position across unrelated add/
+// remove activity elsewhere in the graph. Re-deriving everyone's
+// placement from scratch on every call is exactly what made zoned
+// layout feel unmanaged before this became a real layout.
+void qpwgraph_canvas::applyZonedLayout (void)
+{
+	ensureZoneWidgets();
+
+	foreach (qpwgraph_node *node, m_nodes) {
+		if (!node->isVisible())
+			continue;
+		if (m_zone_drag.contains(node))
+			continue; // mid-drag; leave it alone
+		if (zoneOf(node) != nullptr)
+			continue; // already placed somewhere
+		m_zone[nodeZone(node)]->addNode(node);
+	}
+
+	activateZoneLayout();
+	emitChanged();
+}
+
+
+// Which of the four zones (if any) currently owns this node.
+qpwgraph_zone *qpwgraph_canvas::zoneOf ( qpwgraph_node *node ) const
+{
+	for (int z = 0; z < 4; ++z) {
+		if (m_zone[z] && m_zone[z]->containsNode(node))
+			return m_zone[z];
+	}
+	return nullptr;
+}
+
+
+// Which of the four zones (if any) contains this scene position --
+// used to find the drop target of a zoned drag-and-drop.
+qpwgraph_zone *qpwgraph_canvas::zoneAt ( const QPointF& scene_pos ) const
+{
+	for (int z = 0; z < 4; ++z) {
+		qpwgraph_zone *zone = m_zone[z];
+		if (zone && zone->isVisible()
+			&& zone->sceneBoundingRect().contains(scene_pos))
+			return zone;
+	}
+	return nullptr;
 }
 
 
@@ -1931,6 +2196,9 @@ void qpwgraph_canvas::resizeEvent( QResizeEvent *event )
 	QGraphicsView::resizeEvent(event);
 
 	updateSearchEditor();
+
+	if (m_zoned_layout && m_zone_root)
+		updateZoneRootGeometry();
 }
 
 
@@ -1950,6 +2218,11 @@ bool qpwgraph_canvas::isRepelOverlappingNodes (void) const
 void qpwgraph_canvas::repelOverlappingNodes ( qpwgraph_node *node,
 	qpwgraph_move_command *move_command, const QPointF& delta )
 {
+	// Overlap is structurally impossible once a node's position is
+	// owned by its zone's layout -- nothing to repel.
+	if (m_zoned_layout)
+		return;
+
 	const qreal MIN_NODE_GAP = 8.0f;
 
 	node->setMarked(true);

@@ -409,6 +409,9 @@ qpwgraph_main::qpwgraph_main (
 	QObject::connect(m_ui.viewHidePulseVolumeAction,
 		SIGNAL(triggered(bool)),
 		SLOT(viewHidePulseVolume(bool)));
+	QObject::connect(m_ui.viewZonedLayoutAction,
+		SIGNAL(triggered(bool)),
+		SLOT(viewZonedLayout(bool)));
 
 	m_ui.viewColorsPipewireAudioAction->setData(qpwgraph_pipewire::audioPortType());
 	m_ui.viewColorsPipewireMidiAction->setData(qpwgraph_pipewire::midiPortType());
@@ -1064,6 +1067,12 @@ void qpwgraph_main::viewHidePulseVolume ( bool on )
 {
 	m_ui.graphCanvas->setHidePulseVolume(on);
 	viewRefresh();
+}
+
+
+void qpwgraph_main::viewZonedLayout ( bool on )
+{
+	m_ui.graphCanvas->setZonedLayout(on);
 }
 
 

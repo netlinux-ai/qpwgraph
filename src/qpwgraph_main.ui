@@ -194,6 +194,7 @@
     <addaction name="viewRepelOverlappingNodesAction"/>
     <addaction name="viewConnectThroughNodesAction"/>
     <addaction name="viewHidePulseVolumeAction"/>
+    <addaction name="viewZonedLayoutAction"/>
     <addaction name="separator"/>
     <addaction name="viewRefreshAction"/>
    </widget>
@@ -1262,6 +1263,26 @@
    </property>
    <property name="statusTip">
     <string>Hide PulseAudio volume/infrastructure nodes from the graph</string>
+   </property>
+   <property name="shortcut">
+    <string/>
+   </property>
+  </action>
+  <action name="viewZonedLayoutAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Zoned Layout (Experimental)</string>
+   </property>
+   <property name="iconText">
+    <string>Zoned Layout</string>
+   </property>
+   <property name="toolTip">
+    <string>Zoned layout (experimental)</string>
+   </property>
+   <property name="statusTip">
+    <string>Sort nodes into Inputs / Middle / Outputs / Unused zones instead of a freeform canvas</string>
    </property>
    <property name="shortcut">
     <string/>

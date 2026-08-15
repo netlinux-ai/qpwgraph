@@ -590,8 +590,8 @@
 <p>Grouping and folding both need one thing qpwgraph doesn't currently fetch at all: the node-info callback in <code>qpwgraph_pipewire.cpp</code> reads <code>PW_KEY_NODE_DESCRIPTION</code>, <code>PW_KEY_NODE_NICK</code>, <code>PW_KEY_NODE_NAME</code> and <code>PW_KEY_NODE_ID</code>, and nothing else — <code>PW_KEY_NODE_GROUP</code>, <code>PW_KEY_MEDIA_ROLE</code> and <code>PW_KEY_APP_ID</code> aren't looked up anywhere in the tree. That's new plumbing before it's a UI change: pull those three properties through alongside the existing ones, store them on <code>qpwgraph_node</code>, and the group-by/fold-by logic in §6 has something to match against.</p>
 
 <div class="callout">
-  <span class="tag">Persistence — a gap worth knowing about now</span>
-  <p>Node position currently isn't durably stored anywhere: the <code>.qpwgraph</code> patchbay file (<code>qpwgraph_patchbay.cpp</code>) only records connection rules by node/port name, and <code>GraphLayoutGroup</code> in <code>qpwgraph_config.cpp</code> is the main window's dock/toolbar state, not canvas coordinates. Today, layout is session-only — which is arguably half of why it feels unmanaged. Zone + order-within-zone should go into a small new sidecar keyed by node name (a <code>layout.json</code> next to the patchbay file, not an overload of the connection-rules schema), so it survives restarts even though PipeWire hands out fresh numeric node ids every time. Group-expanded/collapsed state and any manual fold override belong in the same file, keyed the same way.</p>
+  <span class="tag">Persistence — already there, just needs a sibling</span>
+  <p>Corrected from an earlier draft of this doc: node position <em>is</em> already durably stored — <code>qpwgraph_canvas::saveNode()</code>/<code>restoreNode()</code> write and read a <code>QPointF</code> per node under the <code>GraphNodePos</code> QSettings group, keyed by <code>nodeKey()</code> (node name, plus mode for split Input/Output nodes of the same name). It runs automatically on every <code>addItem()</code>/<code>removeItem()</code>, which is exactly why the freeform canvas already "remembers" where you dropped something between runs even though it feels unmanaged — position persists, but nothing about grouping or intent does. Zone + order-within-zone is a natural sibling group (<code>GraphNodeZone</code>, say) keyed the same way, not a new file. Group-expanded/collapsed state and any manual fold override belong there too.</p>
 </div>
 
 <h2 id="phases"><span class="no">8</span>Phased plan</h2>
@@ -600,7 +600,7 @@
   <tr><th>Phase</th><th>Deliverable</th><th>Depends on</th></tr>
   <tr><td>0</td><td>Static 4-zone <code>QGraphicsWidget</code>/<code>QGraphicsLinearLayout</code> skeleton, nodes classified by Figure&nbsp;2's default rule only — no drag-to-reassign, no persistence yet. Enough to see whether the shape feels right before investing further.</td><td>nothing new</td></tr>
   <tr><td>1</td><td>Drag a tile from one zone's layout into another's; both reflow live (Figure&nbsp;3).</td><td>Phase 0</td></tr>
-  <tr><td>2</td><td><code>layout.json</code> sidecar: persist zone + order per node name, load it ahead of the Figure&nbsp;2 default on every launch.</td><td>Phase 1</td></tr>
+  <tr><td>2</td><td>New <code>GraphNodeZone</code> QSettings group, keyed the same way as the existing <code>GraphNodePos</code>: persist zone + order per node key, load it ahead of the Figure&nbsp;2 default on every launch.</td><td>Phase 1</td></tr>
   <tr><td>3</td><td>Draggable splitters between the three top columns (column widths persist too).</td><td>Phase 0</td></tr>
   <tr><td>4</td><td>Pull <code>node.group</code>/<code>media.role</code>/<code>app.id</code> through in <code>qpwgraph_pipewire.cpp</code>; collapse same-group nodes into one disclosure tile; fold or hide the blocklisted control-only set (Figure&nbsp;5).</td><td>Phase 0</td></tr>
 </table>
